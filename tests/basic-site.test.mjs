@@ -45,6 +45,22 @@ test("migration targets the existing schema and does not invoke obsolete authori
   assert.doesNotMatch(executableSql, /module_record_access|public\.profiles|module_records/);
 });
 
+test("public homepage binds published home, history, news, leadership, services and gallery modules", () => {
+  for (const id of ["heroDynamic","historyDynamic","committeeDynamic","newsDynamic","learningDynamic","servicesDynamic","galleryDynamic","contactDynamic"]) {
+    assert.ok(index.includes('id="' + id + '"'), "missing homepage target " + id);
+    assert.ok(app.includes('"' + id + '"') || app.includes('id="' + id + '"'), "app does not render " + id);
+  }
+  assert.match(app, /eq\("status","published"\)/);
+  assert.match(app, /safeUrl/);
+});
+
+test("admin supports owner editing of published records, donation totals and password recovery", () => {
+  assert.match(admin, /isAdmin\(\)\|\|\["draft","pending","rejected"\]/);
+  assert.match(admin, /donationSummary/);
+  assert.match(admin, /setDonationStatus/);
+  assert.match(admin, /resetPasswordForEmail/);
+});
+
 test("public website uses the stylesheet and browser app entry points", () => {
   assert.match(index, /href="style\.css"/);
   assert.match(index, /src="app\.js"/);
