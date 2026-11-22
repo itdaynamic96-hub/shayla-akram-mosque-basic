@@ -22,3 +22,11 @@
 .admin-wrap button:focus-visible,.admin-wrap a:focus-visible,.site-header a:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
 @media(max-width:760px){.dynamic-grid,.gallery-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.dynamic-grid,.gallery-grid{grid-template-columns:1fr}.hero-dynamic{padding:12px}}
+
+.donation-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 20px}
+.donation-stats>div{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:14px}
+.donation-stats small,.donation-stats strong{display:block}
+.donation-stats small{color:var(--muted)}
+.donation-stats strong{font-size:20px;color:var(--green)}
+#donationList .btn{margin:5px 6px 0 0}
+@media(max-width:520px){.donation-stats{grid-template-columns:1fr}}
