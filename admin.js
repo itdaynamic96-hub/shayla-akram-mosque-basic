@@ -19,10 +19,13 @@ const rowMeta=r=>r.data?.metadata||{};
 const rowSlug=r=>moduleByKey[r.module_key]?.[1]||r.module_key;
 async function checkSession(){
  if(!client)return;
- const {data:{session}}=await client.auth.getSession();if(!session)return;
+ const {data:sessionData,error:sessionError}=await client.auth.getSession();
+ if(sessionError){setMessage("loginMessage","সেশন যাচাই ব্যর্থ: "+sessionError.message);return}
+ const session=sessionData?.session;if(!session)return;
  user=session.user;
  const {data,error}=await client.from("profiles").select("id,full_name,role,institution,email,job_title").eq("id",user.id).maybeSingle();
- if(error||!data){await client.auth.signOut();setMessage("loginMessage","এই অ্যাকাউন্টের প্রশাসনিক Profile পাওয়া যায়নি।");return}
+ if(error){setMessage("loginMessage","Profile Query ব্যর্থ: "+error.message+" (code: "+(error.code||"unknown")+")");return}
+ if(!data){setMessage("loginMessage","এই Supabase Project-এ লগইন করা User ID-এর Profile পাওয়া যায়নি। User ID: "+user.id);return}
  profile=data;
  if(!["super_admin","custom_admin","admin","website_admin","editor","mosque_admin","manager"].includes(profile.role)){await client.auth.signOut();setMessage("loginMessage","এই ভূমিকার অ্যাডমিন প্যানেলে প্রবেশের অনুমতি নেই।");return}
  $("loginBox").classList.add("hidden");$("dashboard").classList.remove("hidden");
