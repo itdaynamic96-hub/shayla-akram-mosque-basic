@@ -41,10 +41,37 @@ begin
    raise exception 'বিবরণ সর্বোচ্চ ৫০০ শব্দ হতে পারবে।' using errcode='22023';
  end if;
  new.updated_at=now();
- if new.status='published' and old.status is distinct from 'published' then new.published_at=now(); end if;
+ if new.status='published' then
+   if public.current_admin_role() not in ('owner','admin') then
+     raise exception 'শুধু প্রধান প্রশাসক বা প্রশাসক অনুমোদিত তথ্য প্রকাশ করতে পারবেন।' using errcode='42501';
+   end if;
+   new.published_at=coalesce(new.published_at,now());
+ elsif new.status='approved' then
+   if public.current_admin_role() not in ('owner','admin','reviewer') then
+     raise exception 'এই তথ্য অনুমোদনের অনুমতি নেই।' using errcode='42501';
+   end if;
+ end if;
  return new;
 end; $$;
 drop trigger if exists mosque_entry_word_limit on public.mosque_entries;
+create or replace function public.enforce_entry_word_limit() returns trigger language plpgsql as $
+begin
+ if not public.word_count_500(new.body) then
+   raise exception 'বিবরণ সর্বোচ্চ ৫০০ শব্দ হতে পারবে।' using errcode='22023';
+ end if;
+ new.updated_at=now();
+ if new.status='published' then
+   if public.current_admin_role() not in ('owner','admin') then
+     raise exception 'শুধু প্রধান প্রশাসক বা প্রশাসক অনুমোদিত তথ্য প্রকাশ করতে পারবেন।' using errcode='42501';
+   end if;
+   new.published_at=coalesce(new.published_at,now());
+ elsif new.status='approved' then
+   if public.current_admin_role() not in ('owner','admin','reviewer') then
+     raise exception 'এই তথ্য অনুমোদনের অনুমতি নেই।' using errcode='42501';
+   end if;
+ end if;
+ return new;
+end; $;
 create trigger mosque_entry_word_limit before insert or update on public.mosque_entries for each row execute function public.enforce_entry_word_limit();
 create or replace function public.current_admin_role() returns text language sql stable security definer set search_path=public as $$
  select role from public.admin_profiles where user_id=auth.uid()
