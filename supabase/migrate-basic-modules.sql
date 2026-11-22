@@ -20,9 +20,9 @@ alter table public.module_records
   check (
     institution <> 'mosque'
     or module_key in (
-      'M01','M02','M03','M04','M05',
-      'M06','M07','M08','M09','M10',
-      'M11','M12','M13','M14','M15'
+      'm01','m02','m03','m04','m05',
+      'm06','m07','m08','m09','m10',
+      'm11','m12','m13','m14','m15'
     )
   );
 
@@ -42,9 +42,9 @@ insert into public.admin_module_permissions (user_id, module_key, can_view, can_
 select p.id, k.module_key, true, true
 from public.profiles p
 cross join (values
- ('M01'),('M02'),('M03'),('M04'),('M05'),
- ('M06'),('M07'),('M08'),('M09'),('M10'),
- ('M11'),('M12'),('M13'),('M14'),('M15')
+ ('m01'),('m02'),('m03'),('m04'),('m05'),
+ ('m06'),('m07'),('m08'),('m09'),('m10'),
+ ('m11'),('m12'),('m13'),('m14'),('m15')
 ) as k(module_key)
 where p.role = 'custom_admin'
   and p.institution in ('mosque','both')
