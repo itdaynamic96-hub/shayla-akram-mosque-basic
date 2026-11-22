@@ -17,15 +17,15 @@
 3. SQL Editor-এ `supabase/migrate-basic-modules.sql` চালান (১৫ মডিউল, ৫০০ শব্দের সীমা ও গ্যালারি Storage policy)।
 3. Authentication settings-এ Public sign-ups বন্ধ রাখুন।
 4. Authentication > Users থেকে প্রথম admin account তৈরি করুন।
-6. বিদ্যমান `profiles` টেবিলে ওই Auth user-এর UUID-তে উপযুক্ত `role` ও `institution` নিশ্চিত করুন। `admin_profiles` টেবিল তৈরি করবেন না।
-7. Project URL এবং Publishable key `supabase-config.js`-এ কনফিগার করা আছে।
-8. Auth URL configuration-এ Site URL: `https://itdaynamic96-hub.github.io` এবং Redirect URL: `https://itdaynamic96-hub.github.io/shayla-akram-mosque-basic/**` রাখুন।
+5. বিদ্যমান `profiles` টেবিলে ওই Auth user-এর UUID-তে উপযুক্ত `role` ও `institution` নিশ্চিত করুন। `admin_profiles` টেবিল তৈরি করবেন না।
+6. Project URL এবং Publishable key `supabase-config.js`-এ কনফিগার করা আছে।
+7. Auth URL configuration-এ Site URL: `https://itdaynamic96-hub.github.io` এবং Redirect URL: `https://itdaynamic96-hub.github.io/shayla-akram-mosque-basic/**` রাখুন।
 8. কখনো service_role/secret key browser বা GitHub repository-তে রাখবেন না।
 
 ## ভূমিকা
-- owner/admin: সব কনটেন্ট তৈরি, সম্পাদনা, অনুমোদন, প্রকাশ ও মুছে ফেলতে পারবেন; অনুদান যাচাই করতে পারবেন।
-- reviewer: কনটেন্ট অনুমোদন বা বাতিল করতে পারবেন।
-- editor: কনটেন্ট তৈরি এবং নিজের খসড়া/অনুমোদনের অপেক্ষায় থাকা তথ্য সম্পাদনা করতে পারবেন; অনুদান নথিভুক্ত ও মিডিয়া আপলোড করতে পারবেন।
+- `super_admin`: সব ১৫টি মডিউলের তথ্য তৈরি/সম্পাদনা, অনুমোদন ও প্রকাশ করতে পারবেন।
+- `custom_admin`: `admin_module_permissions`-এ অনুমোদিত মডিউলে তথ্য তৈরি/সম্পাদনা, অনুদান নথিভুক্ত ও গ্যালারি ফাইল আপলোড করতে পারবেন; তথ্য `pending` অবস্থায় যাবে।
+- গ্যালারি ফাইল Storage-এ প্রকাশ্য URL-এ থাকে, কিন্তু ওয়েবসাইটে দেখাতে সংশ্লিষ্ট `m14` রেকর্ড `published` হতে হবে।
 
 ## GitHub Pages
 GitHub Actions workflow: `.github/workflows/pages.yml`।
