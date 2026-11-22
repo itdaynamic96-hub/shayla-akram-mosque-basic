@@ -64,6 +64,7 @@ using (
 
 -- Donation hardening: editors may register only pending donations.
 -- Only owner/admin can verify, reject, or delete donation records.
+alter table public.donation_records enable row level security;
 drop policy if exists "staff manage donations" on public.donation_records;
 drop policy if exists "basic donations read" on public.donation_records;
 drop policy if exists "basic donations insert" on public.donation_records;
