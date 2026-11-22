@@ -7,35 +7,32 @@ if($("todayDate"))$("todayDate").textContent=new Intl.DateTimeFormat("bn-BD",{da
 $("menuToggle")?.addEventListener("click",()=>$("mainNav")?.classList.toggle("open"));
 const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const empty=m=>'<div class="empty-state">'+esc(m)+'</div>';
-const byKey=Object.fromEntries(MODULES.map(m=>[m[0],m]));
 function renderEntry(r){
- const d=r.data||{},meta=d.metadata||{};let media="";
- if(r.module_key==="m14"&&meta.url)media=meta.media_type==="video"?'<video controls preload="metadata" src="'+esc(meta.url)+'"></video>':'<img loading="lazy" src="'+esc(meta.url)+'" alt="'+esc(r.title)+'">';
+ const meta=r.metadata||{};let media="";
+ if(r.module==="gallery"&&meta.url)media=meta.media_type==="video"?'<video controls preload="metadata" src="'+esc(meta.url)+'"></video>':'<img loading="lazy" src="'+esc(meta.url)+'" alt="'+esc(r.title)+'">';
  let extra="";
- if(r.module_key==="m06"&&Object.keys(meta).length)extra='<dl class="entry-meta">'+["ফজর","যোহর","আসর","মাগরিব","ইশা"].map(k=>'<div><dt>'+k+'</dt><dd>'+esc(meta[k]||"—")+'</dd></div>').join("")+'</dl>';
- if(r.module_key==="m07"&&(meta.jummah||meta["জুমার জামাত"]))extra='<p><strong>জুমার জামাত:</strong> '+esc(meta.jummah||meta["জুমার জামাত"])+'</p>';
- return '<article class="admin-card entry-public">'+media+'<h2>'+esc(r.title)+'</h2><p>'+esc(d.body||"")+'</p>'+extra+'</article>';
+ if(r.module==="prayer"&&Object.keys(meta).length)extra='<dl class="entry-meta">'+["ফজর","যোহর","আসর","মাগরিব","ইশা"].map(k=>'<div><dt>'+k+'</dt><dd>'+esc(meta[k]||"—")+'</dd></div>').join("")+'</dl>';
+ if(r.module==="special-prayer"&&(meta.jummah||meta["জুমার জামাত"]))extra='<p><strong>জুমার জামাত:</strong> '+esc(meta.jummah||meta["জুমার জামাত"])+'</p>';
+ return '<article class="admin-card entry-public">'+media+'<h2>'+esc(r.title)+'</h2><p>'+esc(r.body||"")+'</p>'+extra+'</article>';
 }
 async function loadPublic(){
  if(!db)return;
- const {data,error}=await db.from("module_records").select("id,module_key,title,data,status,created_at").eq("institution","mosque").eq("status","published").order("created_at",{ascending:false}).limit(200);
+ const {data,error}=await db.from("mosque_entries").select("id,module,title,body,metadata,status,created_at").eq("status","published").order("created_at",{ascending:false}).limit(200);
  if(error){console.warn("প্রকাশিত তথ্য লোড হয়নি:",error.message);return}
- const rows=(data||[]).filter(r=>r.data?.public_display===true);
- const notices=rows.filter(r=>r.module_key==="m08").slice(0,4),nl=$("noticeList");
- if(nl)nl.innerHTML=notices.length?notices.map(n=>'<article class="notice-card"><h3>'+esc(n.title)+'</h3><p>'+esc((n.data?.body||"").slice(0,240))+'</p></article>').join(""):empty("প্রকাশিত নোটিশ এখনো নেই।");
- const prayer=rows.find(r=>r.module_key==="m06"&&r.data?.metadata);
- if(prayer&&$("prayerGrid"))$("prayerGrid").innerHTML=["ফজর","যোহর","আসর","মাগরিব","ইশা"].map(k=>'<div class="prayer-item"><span>'+k+'</span><strong>'+esc(prayer.data.metadata[k]||"—")+'</strong></div>').join("");
- const friday=rows.find(r=>r.module_key==="m07"&&r.data?.metadata);
- if(friday&&$("jummahTime"))$("jummahTime").textContent=friday.data.metadata.jummah||friday.data.metadata["জুমার জামাত"]||"প্রকাশিত হলে দেখানো হবে";
+ const rows=data||[],notices=rows.filter(r=>r.module==="notices").slice(0,4),nl=$("noticeList");
+ if(nl)nl.innerHTML=notices.length?notices.map(n=>'<article class="notice-card"><h3>'+esc(n.title)+'</h3><p>'+esc((n.body||"").slice(0,240))+'</p></article>').join(""):empty("প্রকাশিত নোটিশ এখনো নেই।");
+ const prayer=rows.find(r=>r.module==="prayer"&&r.metadata);
+ if(prayer&&$("prayerGrid"))$("prayerGrid").innerHTML=["ফজর","যোহর","আসর","মাগরিব","ইশা"].map(k=>'<div class="prayer-item"><span>'+k+'</span><strong>'+esc(prayer.metadata[k]||"—")+'</strong></div>').join("");
+ const friday=rows.find(r=>r.module==="special-prayer"&&r.metadata);
+ if(friday&&$("jummahTime"))$("jummahTime").textContent=friday.metadata.jummah||friday.metadata["জুমার জামাত"]||"প্রকাশিত হলে দেখানো হবে";
 }
 async function renderModule(){
  const slug=new URLSearchParams(location.search).get("page"),module=MODULES.find(x=>x[1]===slug);if(!module)return;
  document.title=module[2]+" | সাকছিপাড়া শায়লা আকরাম কেন্দ্রীয় জামে মসজিদ";
  document.querySelector("main").innerHTML='<section class="page-hero"><div class="container"><h1>'+module[2]+'</h1></div></section><section class="page-content container" id="moduleContent">'+empty("এই বিভাগের তথ্য এখনো প্রকাশ করা হয়নি।")+'</section>';
  if(!db)return;
- const {data,error}=await db.from("module_records").select("id,module_key,title,data,status,created_at").eq("institution","mosque").eq("module_key",module[0]).eq("status","published").order("created_at",{ascending:false});
+ const {data,error}=await db.from("mosque_entries").select("id,module,title,body,metadata,status,created_at").eq("module",module[1]).eq("status","published").order("created_at",{ascending:false});
  if(error){$("moduleContent").innerHTML=empty("তথ্য লোড করা যায়নি। পরে আবার চেষ্টা করুন।");return}
- const rows=(data||[]).filter(r=>r.data?.public_display===true);
- if(rows.length)$("moduleContent").innerHTML=rows.map(renderEntry).join("");
+ if((data||[]).length)$("moduleContent").innerHTML=data.map(renderEntry).join("");
 }
 if(new URLSearchParams(location.search).has("page"))renderModule();else loadPublic();
