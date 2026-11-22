@@ -4,8 +4,8 @@ const client=ready?window.supabase.createClient(window.MOSQUE_SUPABASE_URL,windo
 const $=id=>document.getElementById(id),form=$("entryForm"),body=$("body");
 $("module").innerHTML=modules.map(m=>'<option value="'+m[0]+'">'+m[1]+'</option>').join("");
 const roleNames={owner:"প্রধান মালিক",admin:"প্রশাসক",editor:"সম্পাদক",reviewer:"পর্যালোচক"};
-function countWords(s){return (s.trim().match(/\\S+/g)||[]).length}
-function clampWords(s,max=500){const parts=s.match(/\\S+|\\s+/g)||[];let count=0,out="";for(const part of parts){if(/\\S/.test(part)){if(count===max)break;count++}out+=part}return out}
+function countWords(s){return (s.trim().match(/\S+/g)||[]).length}
+function clampWords(s,max=500){const parts=s.match(/\S+|\s+/g)||[];let count=0,out="";for(const part of parts){if(/\S/.test(part)){if(count===max)break;count++}out+=part}return out}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function statusLabel(s){return ({draft:"খসড়া",pending:"অনুমোদনের অপেক্ষায়",approved:"অনুমোদিত",published:"প্রকাশিত",rejected:"বাতিল",verified:"যাচাইকৃত"}[s]||s)}
 function statusOptions(role){let values=[["draft","খসড়া"],["pending","অনুমোদনের অপেক্ষায়"]];if(["owner","admin","reviewer"].includes(role))values.push(["approved","অনুমোদিত"],["rejected","বাতিল"]);if(["owner","admin"].includes(role))values.push(["published","প্রকাশিত"]);$("status").innerHTML=values.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("")}
