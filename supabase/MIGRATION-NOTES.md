@@ -1,0 +1,1 @@
+The migration is idempotent and safe to rerun in the dedicated Basic project. Run it before activating the owner profile.
