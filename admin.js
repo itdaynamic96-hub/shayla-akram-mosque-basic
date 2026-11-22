@@ -1,31 +1,82 @@
-const modules=[["home","হোমপেজ"],["mosjid-porichiti","মসজিদের পরিচিতি"],["itihas","মসজিদের নামকরণ ও ইতিহাস"],["motawalli","মোতাওয়াল্লীর বাণী"],["committee","পরিচালনা কমিটি"],["prayer","পাঁচ ওয়াক্ত নামাজের সময়সূচি"],["special-prayer","জুমা, রমজান ও ঈদের সময়সূচি"],["notices","নোটিশ ও ঘোষণা"],["news","সংবাদ ও কার্যক্রম"],["islamic-learning","কোরআন ও ইসলামিক শিক্ষা"],["imam","ইমাম ও খতিব পরিচিতি"],["services","ধর্মীয় ও সামাজিক সেবা"],["donations","অনুদান ও সহযোগিতা"],["gallery","ছবি ও ভিডিও গ্যালারি"],["contact","যোগাযোগ ও অবস্থান"]];
-const ready=window.supabase&&window.MOSQUE_SUPABASE_URL&&window.MOSQUE_SUPABASE_ANON_KEY;
-const client=ready?window.supabase.createClient(window.MOSQUE_SUPABASE_URL,window.MOSQUE_SUPABASE_ANON_KEY):null;
-const $=id=>document.getElementById(id),form=$("entryForm"),body=$("body");
-$("module").innerHTML=modules.map(m=>'<option value="'+m[0]+'">'+m[1]+'</option>').join("");
-const roleNames={owner:"প্রধান মালিক",admin:"প্রশাসক",editor:"সম্পাদক",reviewer:"পর্যালোচক"};
-function countWords(s){return (s.trim().match(/\S+/g)||[]).length}
-function clampWords(s,max=500){const parts=s.match(/\S+|\s+/g)||[];let count=0,out="";for(const part of parts){if(/\S/.test(part)){if(count===max)break;count++}out+=part}return out}
-function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-function statusLabel(s){return ({draft:"খসড়া",pending:"অনুমোদনের অপেক্ষায়",approved:"অনুমোদিত",published:"প্রকাশিত",rejected:"বাতিল",verified:"যাচাইকৃত"}[s]||s)}
-function statusOptions(role){let values=[["draft","খসড়া"],["pending","অনুমোদনের অপেক্ষায়"]];if(["owner","admin","reviewer"].includes(role))values.push(["approved","অনুমোদিত"],["rejected","বাতিল"]);if(["owner","admin"].includes(role))values.push(["published","প্রকাশিত"]);$("status").innerHTML=values.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("")}
-function canEdit(row){return ["owner","admin"].includes(window.adminRole)||(window.adminRole==="editor"&&row.created_by===window.adminUserId&&["draft","pending"].includes(row.status))}
-function canCreate(){return ["owner","admin","editor"].includes(window.adminRole)}
-function resetEntry(){form.reset();$("editId").value="";$("entryFormTitle").textContent="নতুন তথ্য যোগ করুন";$("saveEntryBtn").textContent="তথ্য সংরক্ষণ করুন";$("cancelEditBtn").classList.add("hidden");$("wordCount").textContent="০ / ৫০০ শব্দ"}
-function showDashboard(profile,user){window.adminRole=profile.role;window.adminUserId=user.id;$("loginBox").classList.add("hidden");$("dashboard").classList.remove("hidden");$("adminIdentity").textContent=(profile.display_name||user.email)+" · "+(roleNames[profile.role]||profile.role);statusOptions(profile.role);if(!canCreate())form.classList.add("hidden");else form.classList.remove("hidden");if(!["owner","admin","editor"].includes(profile.role))$("donationManager").classList.add("hidden");if(!["owner","admin","editor"].includes(profile.role))$("galleryManager").classList.add("hidden");if(profile.role==="editor")$("paymentStatus").innerHTML='<option value="pending">যাচাই বাকি</option>';loadEntries();loadDonations()}
-body.addEventListener("input",()=>{if(countWords(body.value)>500){body.value=clampWords(body.value);$("saveMessage").textContent="সর্বোচ্চ ৫০০ শব্দ রাখা হয়েছে।"}const n=countWords(body.value);$("wordCount").textContent=n+" / ৫০০ শব্দ";$("wordCount").style.color=n>=500?"#9a6700":""});
-body.addEventListener("paste",e=>{const pasted=(e.clipboardData||window.clipboardData).getData("text");if(countWords(body.value+" "+pasted)>500){e.preventDefault();$("saveMessage").textContent="পেস্ট করা লেখাসহ মোট শব্দ ৫০০-এর বেশি হতে পারবে না।"}});
-$("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!client){$("loginMessage").textContent="Supabase সংযোগ কনফিগার করা নেই।";return}const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error){$("loginMessage").textContent="লগইন ব্যর্থ: "+error.message;return}$("loginMessage").textContent="";await checkSession()});
-$("logoutBtn").addEventListener("click",async()=>{await client.auth.signOut();location.reload()});
-$("cancelEditBtn").addEventListener("click",resetEntry);
-async function checkSession(){if(!client)return;const {data:{session}}=await client.auth.getSession();if(!session)return;const {data:profile,error}=await client.from("admin_profiles").select("display_name,role").eq("user_id",session.user.id).maybeSingle();if(error||!profile){await client.auth.signOut();$("loginMessage").textContent="এই অ্যাকাউন্টের প্রশাসনিক অনুমতি নেই।";return}showDashboard(profile,session.user)}
-form.addEventListener("submit",async e=>{e.preventDefault();if(!client||!canCreate())return;if(countWords(body.value)>500){$("saveMessage").textContent="বিবরণ সর্বোচ্চ ৫০০ শব্দ হতে পারবে।";return}const status=$("status").value;const allowed=status==="published"?["owner","admin"].includes(window.adminRole):["approved","rejected"].includes(status)?["owner","admin","reviewer"].includes(window.adminRole):["owner","admin","editor"].includes(window.adminRole);if(!allowed){$("saveMessage").textContent="আপনার ভূমিকার জন্য এই অবস্থা নির্বাচন করা যাবে না।";return}let metadata={};try{metadata=$("metadata").value.trim()?JSON.parse($("metadata").value):{};if(!metadata||Array.isArray(metadata)||typeof metadata!=="object")throw new Error("JSON অবজেক্ট হতে হবে।")}catch(err){$("saveMessage").textContent="JSON সঠিক নয়: "+err.message;return}const payload={module:$("module").value,title:$("title").value.trim(),body:body.value.trim(),metadata,status};let result;if($("editId").value){result=await client.from("mosque_entries").update(payload).eq("id",$("editId").value)}else{result=await client.from("mosque_entries").insert({...payload,created_by:window.adminUserId})}$("saveMessage").textContent=result.error?"সংরক্ষণ হয়নি: "+result.error.message:"তথ্য সংরক্ষিত হয়েছে।";if(!result.error){resetEntry();await loadEntries()}});
-async function editEntry(id){const {data,error}=await client.from("mosque_entries").select("*").eq("id",id).single();if(error){$("saveMessage").textContent="তথ্য খোলা যায়নি: "+error.message;return}if(!canEdit(data))return;$("editId").value=data.id;$("module").value=data.module;$("title").value=data.title;$("body").value=data.body||"";$("metadata").value=JSON.stringify(data.metadata||{},null,2);$("status").value=data.status;$("entryFormTitle").textContent="তথ্য সম্পাদনা করুন";$("saveEntryBtn").textContent="পরিবর্তন সংরক্ষণ করুন";$("cancelEditBtn").classList.remove("hidden");$("wordCount").textContent=countWords(body.value)+" / ৫০০ শব্দ";form.scrollIntoView({behavior:"smooth",block:"start"})}
-async function changeStatus(id,status){const permitted=status==="published"?["owner","admin"].includes(window.adminRole):["approved","rejected"].includes(status)?["owner","admin","reviewer"].includes(window.adminRole):["owner","admin","editor"].includes(window.adminRole);if(!permitted)return;const {error}=await client.from("mosque_entries").update({status}).eq("id",id);$("saveMessage").textContent=error?"অবস্থা পরিবর্তন হয়নি: "+error.message:"অবস্থা পরিবর্তন হয়েছে।";await loadEntries()}
-async function deleteEntry(id){if(!["owner","admin"].includes(window.adminRole)||!confirm("এই তথ্যটি স্থায়ীভাবে মুছে ফেলবেন?"))return;const {error}=await client.from("mosque_entries").delete().eq("id",id);$("saveMessage").textContent=error?"মুছে ফেলা যায়নি: "+error.message:"তথ্য মুছে ফেলা হয়েছে।";await loadEntries()}
-async function loadEntries(){const {data,error}=await client.from("mosque_entries").select("id,module,title,status,created_at,created_by").order("created_at",{ascending:false}).limit(100);if(error){$("entries").textContent="তথ্য লোড হয়নি: "+error.message;return}const rows=data||[];$("entries").innerHTML=rows.map(x=>{let opts=[];if(["owner","admin","editor"].includes(window.adminRole))opts.push(["draft","খসড়া"],["pending","অনুমোদনের অপেক্ষায়"]);if(["owner","admin","reviewer"].includes(window.adminRole))opts.push(["approved","অনুমোদিত"],["rejected","বাতিল"]);if(["owner","admin"].includes(window.adminRole))opts.push(["published","প্রকাশিত"]);const actions=(canEdit(x)?'<button class="btn btn-outline" type="button" data-edit="'+x.id+'">সম্পাদনা</button>':"")+opts.filter(o=>o[0]!==x.status).map(o=>'<button class="btn btn-outline" type="button" data-status="'+o[0]+'" data-id="'+x.id+'">'+o[1]+'</button>').join(" ")+( ["owner","admin"].includes(window.adminRole)?'<button class="btn btn-outline" type="button" data-delete="'+x.id+'">মুছুন</button>':"");return '<article class="notice-card"><strong>'+esc(x.title)+'</strong><p>'+esc(modules.find(m=>m[0]===x.module)?.[1]||x.module)+' · <span class="status">'+statusLabel(x.status)+'</span></p><div class="admin-toolbar">'+actions+'</div></article>'}).join("")||"এখনো কোনো তথ্য নেই।";$("entries").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>editEntry(b.dataset.edit)));$("entries").querySelectorAll("[data-status]").forEach(b=>b.addEventListener("click",()=>changeStatus(b.dataset.id,b.dataset.status)));$("entries").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteEntry(b.dataset.delete)))}
+const modules=[["M01","home","হোমপেজ"],["M02","mosjid-porichiti","মসজিদের পরিচিতি"],["M03","itihas","মসজিদের নামকরণ ও ইতিহাস"],["M04","motawalli","মোতাওয়াল্লীর বাণী"],["M05","committee","পরিচালনা কমিটি"],["M06","prayer","পাঁচ ওয়াক্ত নামাজের সময়সূচি"],["M07","special-prayer","জুমা, রমজান ও ঈদের সময়সূচি"],["M08","notices","নোটিশ ও ঘোষণা"],["M09","news","সংবাদ ও কার্যক্রম"],["M10","islamic-learning","কোরআন ও ইসলামিক শিক্ষা"],["M11","imam","ইমাম ও খতিব পরিচিতি"],["M12","services","ধর্মীয় ও সামাজিক সেবা"],["M13","donations","অনুদান ও সহযোগিতা"],["M14","gallery","ছবি ও ভিডিও গ্যালারি"],["M15","contact","যোগাযোগ ও অবস্থান"]];
+const client=window.supabase&&window.MOSQUE_SUPABASE_URL&&window.MOSQUE_SUPABASE_ANON_KEY?window.supabase.createClient(window.MOSQUE_SUPABASE_URL,window.MOSQUE_SUPABASE_ANON_KEY):null;
+const $=id=>document.getElementById(id), form=$("entryForm"), body=$("body");
+const moduleByKey=Object.fromEntries(modules.map(m=>[m[0],m]));
+const roleNames={super_admin:"সুপার অ্যাডমিন",custom_admin:"কাস্টম অ্যাডমিন",admin:"অ্যাডমিন",website_admin:"ওয়েবসাইট অ্যাডমিন",editor:"সম্পাদক",mosque_admin:"মসজিদ অ্যাডমিন",manager:"ব্যবস্থাপক",foundation_admin:"ফাউন্ডেশন অ্যাডমিন",accounts_manager:"হিসাব ব্যবস্থাপক",accountant:"হিসাবরক্ষক",auditor:"নিরীক্ষক",viewer:"দর্শক"};
+let profile=null,user=null,entries=[];
+const countWords=s=>(s.trim().match(/\S+/g)||[]).length;
+const clampWords=s=>{let n=0;return (s.match(/\S+|\s+/g)||[]).filter(p=>{if(!/\S/.test(p))return true;if(n>=500)return false;n++;return true}).join("")};
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const label=s=>({draft:"খসড়া",pending:"অনুমোদনের অপেক্ষায়",approved:"অনুমোদিত",published:"প্রকাশিত",rejected:"বাতিল"}[s]||s);
+function moduleKey(slug){return modules.find(m=>m[1]===slug)?.[0]}
+function canWrite(m){return profile?.role==="super_admin"||(profile?.role==="custom_admin"&&profile.institution==="mosque")||(["admin","website_admin","editor","mosque_admin","manager"].includes(profile?.role)&&profile.institution==="mosque")}
+function reset(){form.reset();$("editId").value="";$("entryFormTitle").textContent="নতুন তথ্য যোগ করুন";$("saveEntryBtn").textContent="তথ্য সংরক্ষণ করুন";$("cancelEditBtn").classList.add("hidden");$("wordCount").textContent="০ / ৫০০ শব্দ"}
+function statusOptions(){const allowed=profile?.role==="super_admin"?[["draft","খসড়া"],["pending","অনুমোদনের অপেক্ষায়"],["approved","অনুমোদিত"],["rejected","বাতিল"],["published","প্রকাশিত"]]:[["draft","খসড়া"],["pending","অনুমোদনের অপেক্ষায়"]];$("status").innerHTML=allowed.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("")}
+function rowBody(r){return r.data?.body||""}
+function rowMeta(r){return r.data?.metadata||{}}
+function rowSlug(r){return moduleByKey[r.module_key]?.[1]||r.module_key}
+async function checkSession(){
+ if(!client)return;
+ const {data:{session}}=await client.auth.getSession();if(!session)return;
+ user=session.user;
+ const {data,error}=await client.from("profiles").select("id,full_name,role,institution,email,job_title").eq("id",user.id).maybeSingle();
+ if(error||!data){await client.auth.signOut();$("loginMessage").textContent="এই অ্যাকাউন্টের প্রশাসনিক Profile পাওয়া যায়নি।";return}
+ profile=data;
+ if(!["super_admin","custom_admin","admin","website_admin","editor","mosque_admin","manager"].includes(profile.role)){await client.auth.signOut();$("loginMessage").textContent="এই ভূমিকার অ্যাডমিন প্যানেলে প্রবেশের অনুমতি নেই।";return}
+ $("loginBox").classList.add("hidden");$("dashboard").classList.remove("hidden");
+ $("adminIdentity").textContent=(profile.full_name||user.email)+" · "+(roleNames[profile.role]||profile.role)+" · "+profile.institution;
+ $("module").innerHTML=modules.map(m=>'<option value="'+m[1]+'">'+m[2]+'</option>').join("");
+ statusOptions();
+ if(!canWrite())form.classList.add("hidden");
+ if(profile.role!=="super_admin"){$("donationManager").classList.add("hidden");$("galleryManager").classList.add("hidden")}
+ await loadEntries();
+}
+async function loadEntries(){
+ const {data,error}=await client.from("module_records").select("id,module_key,institution,title,data,status,created_by,approved_by,approved_at,created_at,updated_at").eq("institution","mosque").order("created_at",{ascending:false}).limit(100);
+ if(error){$("entries").textContent="তথ্য লোড হয়নি: "+error.message;return}
+ entries=data||[];
+ $("entries").innerHTML=entries.map(r=>{
+ const actions=[];
+ if(canWrite()&&(["draft","pending","rejected"].includes(r.status)||profile.role==="super_admin"))actions.push('<button class="btn btn-outline" data-edit="'+r.id+'">সম্পাদনা</button>');
+ if(profile.role==="super_admin"&&r.status!=="published")actions.push('<button class="btn btn-outline" data-state="published" data-id="'+r.id+'">প্রকাশ</button>');
+ if(profile.role==="super_admin"&&r.status!=="approved")actions.push('<button class="btn btn-outline" data-state="approved" data-id="'+r.id+'">অনুমোদন</button>');
+ if(profile.role==="super_admin"&&r.status!=="rejected")actions.push('<button class="btn btn-outline" data-state="rejected" data-id="'+r.id+'">বাতিল</button>');
+ return '<article class="notice-card"><strong>'+esc(r.title)+'</strong><p>'+esc(moduleByKey[r.module_key]?.[2]||r.module_key)+' · '+label(r.status)+' · '+esc(r.institution)+'</p><div class="admin-toolbar">'+actions.join(" ")+'</div></article>'
+ }).join("")||"এখনো কোনো তথ্য নেই।";
+ $("entries").querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editEntry(b.dataset.edit));
+ $("entries").querySelectorAll("[data-state]").forEach(b=>b.onclick=()=>changeStatus(b.dataset.id,b.dataset.state));
+}
+async function editEntry(id){
+ const r=entries.find(x=>x.id===id);if(!r)return;
+ $("editId").value=r.id;$("module").value=rowSlug(r);$("title").value=r.title;$("body").value=rowBody(r);$("metadata").value=JSON.stringify(rowMeta(r),null,2);$("status").value=r.status;
+ $("entryFormTitle").textContent="তথ্য সম্পাদনা করুন";$("saveEntryBtn").textContent="পরিবর্তন সংরক্ষণ করুন";$("cancelEditBtn").classList.remove("hidden");$("wordCount").textContent=countWords(body.value)+" / ৫০০ শব্দ";
+ form.scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function changeStatus(id,status){
+ if(profile.role!=="super_admin")return;
+ const r=entries.find(x=>x.id===id);if(!r)return;
+ const patch={status,approved_by:user.id,approved_at:new Date().toISOString(),data:{...(r.data||{}),public_display:status==="published"}};
+ const {error}=await client.from("module_records").update(patch).eq("id",id);
+ $("saveMessage").textContent=error?"অবস্থা পরিবর্তন হয়নি: "+error.message:"অবস্থা পরিবর্তন হয়েছে।";
+ await loadEntries();
+}
+form.addEventListener("submit",async e=>{
+ e.preventDefault();if(!client||!canWrite())return;
+ if(countWords(body.value)>500){$("saveMessage").textContent="বিবরণ সর্বোচ্চ ৫০০ শব্দ হতে পারবে।";return}
+ let metadata={};try{metadata=$("metadata").value.trim()?JSON.parse($("metadata").value):{};if(!metadata||Array.isArray(metadata)||typeof metadata!=="object")throw new Error("JSON অবজেক্ট হতে হবে।")}catch(err){$("saveMessage").textContent="JSON সঠিক নয়: "+err.message;return}
+ const slug=$("module").value,key=moduleKey(slug),status=$("status").value;
+ const data={body:body.value.trim(),metadata,public_display:status==="published"};
+ const payload={module_key:key,institution:"mosque",title:$("title").value.trim(),data,status};
+ let result;
+ if($("editId").value)result=await client.from("module_records").update(payload).eq("id",$("editId").value);
+ else result=await client.from("module_records").insert({...payload,created_by:user.id});
+ $("saveMessage").textContent=result.error?"সংরক্ষণ হয়নি: "+result.error.message:"তথ্য সংরক্ষিত হয়েছে।";
+ if(!result.error){reset();await loadEntries()}
+});
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!client){$("loginMessage").textContent="Supabase সংযোগ কনফিগার করা নেই।";return}const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error){$("loginMessage").textContent="লগইন ব্যর্থ: "+error.message;return}await checkSession()});
+$("logoutBtn").onclick=async()=>{await client.auth.signOut();location.reload()};
+$("cancelEditBtn").onclick=reset;
+body.addEventListener("input",()=>{if(countWords(body.value)>500){body.value=clampWords(body.value);$("saveMessage").textContent="সর্বোচ্চ ৫০০ শব্দ রাখা হয়েছে।"}$("wordCount").textContent=countWords(body.value)+" / ৫০০ শব্দ"});
+body.addEventListener("paste",e=>{const t=(e.clipboardData||window.clipboardData).getData("text");if(countWords(body.value+" "+t)>500){e.preventDefault();$("saveMessage").textContent="পেস্ট করা লেখাসহ মোট শব্দ ৫০০-এর বেশি হতে পারবে না।"}});
 $("donationDate").value=new Date().toISOString().slice(0,10);
-$("donationForm").addEventListener("submit",async e=>{e.preventDefault();if(!["owner","admin","editor"].includes(window.adminRole))return;const {error}=await client.from("donation_records").insert({donor_name:$("donorName").value.trim()||null,amount:Number($("donationAmount").value),source:$("donationSource").value.trim()||"manual",received_on:$("donationDate").value,receipt_no:$("receiptNo").value.trim()||null,payment_status:$("paymentStatus").value,note:$("donationNote").value.trim()||null,created_by:window.adminUserId});$("donationMessage").textContent=error?"অনুদান সংরক্ষণ হয়নি: "+error.message:"অনুদান নথিভুক্ত হয়েছে।";if(!error){e.target.reset();$("donationDate").value=new Date().toISOString().slice(0,10);await loadDonations()}});
-async function loadDonations(){const {data,error}=await client.from("donation_records").select("id,donor_name,amount,currency,source,received_on,receipt_no,payment_status").order("received_on",{ascending:false}).limit(100);if(error){$("donationList").textContent="অনুদানের হিসাব লোড হয়নি: "+error.message;return}const rows=data||[];$("donationList").innerHTML=rows.map(d=>'<article class="notice-card"><strong>'+esc(d.donor_name||"নাম প্রকাশে অনিচ্ছুক")+' · ৳'+Number(d.amount).toLocaleString("bn-BD")+'</strong><p>'+esc(d.received_on)+' · '+esc(d.source)+' · '+statusLabel(d.payment_status)+(d.receipt_no?" · রসিদ: "+esc(d.receipt_no):"")+'</p>'+(["owner","admin"].includes(window.adminRole)?'<select data-donation-status="'+d.id+'"><option value="pending">যাচাই বাকি</option><option value="verified">যাচাইকৃত</option><option value="rejected">বাতিল</option></select>':"")+'</article>').join("")||"এখনো কোনো অনুদান নথিভুক্ত হয়নি।";$("donationList").querySelectorAll("[data-donation-status]").forEach(sel=>{sel.value=rows.find(d=>d.id===sel.dataset.donationStatus)?.payment_status||"pending";sel.addEventListener("change",async()=>{const {error}=await client.from("donation_records").update({payment_status:sel.value}).eq("id",sel.dataset.donationStatus);$("donationMessage").textContent=error?"অবস্থা বদলানো যায়নি: "+error.message:"অনুদানের অবস্থা হালনাগাদ হয়েছে।"})})}
-$("galleryForm").addEventListener("submit",async e=>{e.preventDefault();if(!["owner","admin","editor"].includes(window.adminRole))return;const file=$("mediaFile").files[0];if(!file)return;if(file.size>10*1024*1024){$("galleryMessage").textContent="ফাইল ১০ MB-এর বেশি হতে পারবে না।";return}if(!file.type.startsWith("image/")&&!["video/mp4","video/webm"].includes(file.type)){$("galleryMessage").textContent="শুধু ছবি, MP4 বা WebM ভিডিও আপলোড করা যাবে।";return}const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"-");const path=window.adminUserId+"/"+Date.now()+"-"+safeName;$("galleryMessage").textContent="ফাইল আপলোড হচ্ছে…";const upload=await client.storage.from("mosque-media").upload(path,file,{upsert:false,contentType:file.type});if(upload.error){$("galleryMessage").textContent="আপলোড ব্যর্থ: "+upload.error.message;return}const {data:{publicUrl}}=client.storage.from("mosque-media").getPublicUrl(path);const isVideo=file.type.startsWith("video/");const {error}=await client.from("mosque_entries").insert({module:"gallery",title:$("mediaTitle").value.trim(),body:$("mediaCaption").value.trim(),metadata:{url:publicUrl,storage_path:path,media_type:isVideo?"video":"image"},status:"pending",created_by:window.adminUserId});if(error){await client.storage.from("mosque-media").remove([path]);$("galleryMessage").textContent="ফাইল উঠেছে, কিন্তু গ্যালারি নথি তৈরি হয়নি: "+error.message;return}e.target.reset();$("galleryMessage").textContent="ফাইল আপলোড হয়েছে এবং অনুমোদনের অপেক্ষায় আছে। গ্যালারি বিভাগ থেকে প্রকাশ করুন।";await loadEntries()});
 if(client)checkSession();else $("loginMessage").textContent="Supabase Project URL ও Publishable key যুক্ত না হওয়া পর্যন্ত লগইন চালু হবে না।";
