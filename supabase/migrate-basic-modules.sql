@@ -58,3 +58,56 @@ where p.role = 'custom_admin'
 -- Data shape in module_records.data:
 -- {"body":"...","metadata":{},"public_display":true}
 -- Existing RLS policies/functions are intentionally preserved.
+
+
+-- Enable the public media bucket used by the Basic website gallery.
+-- Upload permission is checked against the existing module-level permission function.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'mosque-media',
+  'mosque-media',
+  true,
+  10485760,
+  array['image/*','video/mp4','video/webm']
+)
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "basic mosque media public read" on storage.objects;
+create policy "basic mosque media public read"
+on storage.objects for select
+to anon, authenticated
+using (bucket_id = 'mosque-media');
+
+drop policy if exists "basic mosque media permitted upload" on storage.objects;
+create policy "basic mosque media permitted upload"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'mosque-media'
+  and public.module_record_access('m14', 'mosque', true)
+);
+
+drop policy if exists "basic mosque media permitted update" on storage.objects;
+create policy "basic mosque media permitted update"
+on storage.objects for update
+to authenticated
+using (
+  bucket_id = 'mosque-media'
+  and public.module_record_access('m14', 'mosque', true)
+)
+with check (
+  bucket_id = 'mosque-media'
+  and public.module_record_access('m14', 'mosque', true)
+);
+
+drop policy if exists "basic mosque media permitted delete" on storage.objects;
+create policy "basic mosque media permitted delete"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'mosque-media'
+  and public.module_record_access('m14', 'mosque', true)
+);
