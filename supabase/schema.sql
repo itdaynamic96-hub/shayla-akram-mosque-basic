@@ -48,7 +48,7 @@ declare actor_role text;
 begin
  if not public.word_count_500(new.body) then raise exception 'বিবরণ সর্বোচ্চ ৫০০ শব্দ হতে পারবে।' using errcode='22023'; end if;
  actor_role:=public.current_admin_role();
- if tg_op='UPDATE' and actor_role not in ('owner','admin') and (new.created_by is distinct from old.created_by or new.module is distinct from old.module) then
+ if tg_op='UPDATE' and (actor_role is null or actor_role not in ('owner','admin')) and (new.created_by is distinct from old.created_by or new.module is distinct from old.module) then
    raise exception 'তথ্যের মালিক বা বিভাগ পরিবর্তনের অনুমতি নেই।' using errcode='42501';
  end if;
  if new.status='approved' and (actor_role is null or actor_role not in ('owner','admin','reviewer')) then raise exception 'এই তথ্য অনুমোদনের অনুমতি নেই।' using errcode='42501'; end if;
