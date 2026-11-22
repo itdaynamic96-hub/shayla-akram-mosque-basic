@@ -21,6 +21,7 @@ function renderEntryActions(r){
  if(canWrite()&&(isAdmin()||r.created_by===user.id)&&(isAdmin()||["draft","pending","rejected"].includes(r.status)))actions.push('<button class="btn btn-outline" data-edit="'+r.id+'">সম্পাদনা</button>');
  if(canReview()&&r.status!=="approved")actions.push('<button class="btn btn-outline" data-state="approved" data-id="'+r.id+'">অনুমোদন</button>');
  if(canReview()&&r.status!=="rejected")actions.push('<button class="btn btn-outline" data-state="rejected" data-id="'+r.id+'">বাতিল</button>');
+ if(isAdmin())actions.push('<button class="btn btn-outline" data-delete-entry="'+r.id+'">মুছুন</button>');
  if(isAdmin()&&r.status!=="published")actions.push('<button class="btn btn-outline" data-state="published" data-id="'+r.id+'">প্রকাশ</button>');
  return actions.join(" ");
 }
@@ -49,6 +50,7 @@ async function checkSession(){
 function bindEntryActions(container){
  container.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editEntry(b.dataset.edit));
  container.querySelectorAll("[data-state]").forEach(b=>b.onclick=()=>changeStatus(b.dataset.id,b.dataset.state));
+ container.querySelectorAll("[data-delete-entry]").forEach(b=>b.onclick=()=>deleteEntry(b.dataset.deleteEntry));
 }
 async function loadEntries(){
  const {data,error}=await client.from("mosque_entries").select("id,module,title,body,metadata,status,created_by,reviewed_by,published_at,created_at,updated_at").order("created_at",{ascending:false}).limit(200);
@@ -59,6 +61,16 @@ function editEntry(id){
  const r=entries.find(x=>x.id===id);if(!r||(!isAdmin()&&r.created_by!==user.id))return;
  $("editId").value=r.id;$("module").value=r.module;$("title").value=r.title;$("body").value=r.body||"";$("metadata").value=JSON.stringify(rowMeta(r),null,2);$("status").value=r.status;
  $("entryFormTitle").textContent="তথ্য সম্পাদনা করুন";$("saveEntryBtn").textContent="পরিবর্তন সংরক্ষণ করুন";$("cancelEditBtn").classList.remove("hidden");$("wordCount").textContent=countWords(body.value)+" / ৫০০ শব্দ";form.scrollIntoView({behavior:"smooth",block:"start"});
+}
+async function deleteEntry(id){
+ const r=entries.find(x=>x.id===id);if(!r||!isAdmin())return;
+ if(!confirm("এই তথ্য স্থায়ীভাবে মুছে ফেলবেন?"))return;
+ const {error}=await client.from("mosque_entries").delete().eq("id",id);
+ if(error){setMessage("saveMessage","তথ্য মুছতে সমস্যা হয়েছে: "+error.message);return}
+ let note="তথ্য মুছে ফেলা হয়েছে।";
+ const path=r.metadata?.storage_path;
+ if(path){const {error:mediaError}=await client.storage.from("mosque-media").remove([path]);if(mediaError)note+=" তবে মিডিয়া ফাইল মুছতে পারেনি: "+mediaError.message}
+ setMessage("saveMessage",note);await loadEntries();
 }
 async function changeStatus(id,status){
  const r=entries.find(x=>x.id===id);if(!r)return;
@@ -93,14 +105,14 @@ async function loadDonations(){
 }
 const labelDonation=s=>({pending:"যাচাই বাকি",verified:"যাচাইকৃত",rejected:"বাতিল"}[s]||s);
 async function setDonationStatus(id,status){
- const r=donations.find(x=>x.id===id);if(!r||!canWrite()||!["verified","rejected"].includes(status))return;
+ const r=donations.find(x=>x.id===id);if(!r||!isAdmin()||!["verified","rejected"].includes(status))return;
  const {error}=await client.from("donation_records").update({payment_status:status}).eq("id",id);
  setMessage("donationMessage",error?"অনুদানের অবস্থা পরিবর্তন হয়নি: "+error.message:(status==="verified"?"অনুদান যাচাইকৃত হিসেবে সংরক্ষিত হয়েছে।":"অনুদান বাতিল হিসেবে সংরক্ষিত হয়েছে।"));if(!error)await loadDonations();
 }
 $("donationForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!client||!canWrite())return;
  const amount=Number($("donationAmount").value);if(!Number.isFinite(amount)||amount<=0){setMessage("donationMessage","সঠিক অনুদানের পরিমাণ লিখুন।");return}
- const payload={donor_name:$("donorName").value.trim()||null,amount,currency:"BDT",source:$("donationSource").value.trim()||"নগদ",received_on:$("donationDate").value,receipt_no:$("receiptNo").value.trim()||null,payment_status:$("paymentStatus").value,note:$("donationNote").value.trim()||null,created_by:user.id};
+ const payload={donor_name:$("donorName").value.trim()||null,amount,currency:"BDT",source:$("donationSource").value.trim()||"নগদ",received_on:$("donationDate").value,receipt_no:$("receiptNo").value.trim()||null,payment_status:isAdmin()?$("paymentStatus").value:"pending",note:$("donationNote").value.trim()||null,created_by:user.id};
  const {error}=await client.from("donation_records").insert(payload);
  setMessage("donationMessage",error?"অনুদান নথিভুক্ত হয়নি: "+error.message:"অনুদান নথিভুক্ত হয়েছে।");if(!error){$("donationForm").reset();$("donationDate").value=new Date().toISOString().slice(0,10);await loadDonations()}
 });
