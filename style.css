@@ -30,3 +30,5 @@
 .donation-stats strong{font-size:20px;color:var(--green)}
 #donationList .btn{margin:5px 6px 0 0}
 @media(max-width:520px){.donation-stats{grid-template-columns:1fr}}
+
+.compact-heading{margin:28px auto 12px}.compact-heading h3{margin:0;color:var(--green);font-size:22px}
