@@ -25,12 +25,14 @@ function setSection(id,rows,message,compact=false){
 function renderHomepage(rows){
  const latest=Object.fromEntries(MODULES.map(m=>[m[1],rows.find(r=>r.module===m[1])]));
  const home=latest.home;
- if(home){const heroText=$("heroDynamic");if(heroText){heroText.innerHTML='<p>'+esc(home.body)+'</p>';heroText.classList.remove("hidden")}}
+ if(home){const heroText=$("heroDynamic");if(heroText){heroText.innerHTML=(home.title?'<h2>'+esc(home.title)+'</h2>':"")+(home.body?'<p>'+esc(home.body)+'</p>':"");heroText.classList.remove("hidden")}}
  setSection("historyDynamic",rows.filter(r=>["mosjid-porichiti","itihas","motawalli"].includes(r.module)).slice(0,3),"মসজিদের পরিচিতি ও ইতিহাসের তথ্য প্রকাশের অপেক্ষায়।",true);
  setSection("committeeDynamic",rows.filter(r=>["committee","imam"].includes(r.module)).slice(0,4),"কমিটি ও ইমাম-খতিবের পরিচিতি প্রকাশের অপেক্ষায়।",true);
  setSection("newsDynamic",rows.filter(r=>r.module==="news").slice(0,3),"প্রকাশিত সংবাদ ও কার্যক্রম এখনো নেই।",true);
  setSection("learningDynamic",rows.filter(r=>r.module==="islamic-learning").slice(0,3),"ইসলামিক শিক্ষার তথ্য প্রকাশের অপেক্ষায়।",true);
  setSection("servicesDynamic",rows.filter(r=>r.module==="services").slice(0,3),"সেবা কার্যক্রমের তথ্য প্রকাশের অপেক্ষায়।",true);
+ setSection("donationsDynamic",rows.filter(r=>r.module==="donations").slice(0,2),"অনুদান ও সহযোগিতার তথ্য প্রকাশের অপেক্ষায়।",true);
+ setSection("specialPrayerDynamic",rows.filter(r=>r.module==="special-prayer").slice(0,2),"জুমা, রমজান ও ঈদের সময়সূচি প্রকাশের অপেক্ষায়।",true);
  setSection("galleryDynamic",rows.filter(r=>r.module==="gallery").slice(0,6),"প্রকাশিত ছবি বা ভিডিও এখনো নেই।",true);
  setSection("noticeList",rows.filter(r=>r.module==="notices").slice(0,4),"প্রকাশিত নোটিশ এখনো নেই।",true);
  const prayer=latest.prayer;
