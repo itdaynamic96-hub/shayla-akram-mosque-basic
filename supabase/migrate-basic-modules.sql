@@ -41,7 +41,7 @@ set public=excluded.public,
     file_size_limit=excluded.file_size_limit,
     allowed_mime_types=excluded.allowed_mime_types;
 
--- Remove obsolete policies that called the incompatible module_records authorization function.
+-- Remove obsolete Storage policies from the incompatible authorization model.
 drop policy if exists "basic mosque media permitted upload" on storage.objects;
 drop policy if exists "basic mosque media permitted update" on storage.objects;
 drop policy if exists "basic mosque media permitted delete" on storage.objects;
@@ -50,6 +50,14 @@ create policy "basic mosque media public read"
 on storage.objects for select to anon, authenticated
 using (bucket_id='mosque-media');
 
--- Existing schema.sql policies "staff upload mosque media" and "staff update mosque media"
--- authorize uploads through current_admin_role().
+-- Permit cleanup of files uploaded by staff if a corresponding entry cannot be saved.
+drop policy if exists "basic mosque media staff delete" on storage.objects;
+create policy "basic mosque media staff delete"
+on storage.objects for delete to authenticated
+using (
+  bucket_id='mosque-media'
+  and public.current_admin_role() in ('owner','admin','editor')
+);
+
+-- Existing schema.sql upload/update policies use current_admin_role().
 notify pgrst, 'reload schema';

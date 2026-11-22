@@ -35,13 +35,14 @@ test("admin validates 500 words, separates reviewer actions, and supports galler
   assert.match(admin, /storage\.from\("mosque-media"\)\.upload/);
 });
 
-test("migration targets the existing mosque_entries schema and safe storage policies", () => {
+test("migration targets the existing schema and does not invoke obsolete authorization functions", () => {
   assert.match(migration, /mosque_entries/);
   assert.match(migration, /donation_records/);
   assert.match(migration, /word_count_500/);
   assert.match(migration, /admin_profiles/);
   assert.match(migration, /mosque-media/);
-  assert.doesNotMatch(migration, /module_record_access|public\.profiles|module_records/);
+  const executableSql = migration.replace(/^--.*$/gm, "");
+  assert.doesNotMatch(executableSql, /module_record_access|public\.profiles|module_records/);
 });
 
 test("public website uses the stylesheet and browser app entry points", () => {
