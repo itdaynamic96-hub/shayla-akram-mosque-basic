@@ -130,7 +130,7 @@ $("cancelEditBtn").onclick=reset;
 body.addEventListener("input",()=>{if(countWords(body.value)>500){body.value=clampWords(body.value);setMessage("saveMessage","সর্বোচ্চ ৫০০ শব্দ রাখা হয়েছে।")}$("wordCount").textContent=countWords(body.value)+" / ৫০০ শব্দ"});
 body.addEventListener("paste",e=>{const t=(e.clipboardData||window.clipboardData).getData("text");if(countWords(body.value+" "+t)>500){e.preventDefault();setMessage("saveMessage","পেস্ট করা লেখাসহ মোট শব্দ ৫০০-এর বেশি হতে পারবে না।")}});
 $("donationDate").value=new Date().toISOString().slice(0,10);
-client.auth.onAuthStateChange((event)=>{
+if(client)client.auth.onAuthStateChange((event)=>{
  if(event==="PASSWORD_RECOVERY"){
   $("loginBox").classList.add("hidden");
   $("recoveryBox").classList.remove("hidden");
