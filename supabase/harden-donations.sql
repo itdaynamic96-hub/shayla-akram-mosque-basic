@@ -7,6 +7,7 @@ begin
   raise exception 'Expected donation_records and admin_profiles tables in the Basic project.';
  end if;
 end $$;
+alter table public.donation_records enable row level security;
 drop policy if exists "staff manage donations" on public.donation_records;
 drop policy if exists "basic donations read" on public.donation_records;
 drop policy if exists "basic donations insert" on public.donation_records;
