@@ -13,9 +13,11 @@ end $$;
 
 -- Keep all 15 fixed modules and enforce the server-side 500-word limit.
 alter table public.mosque_entries
+  drop constraint if exists mosque_entries_module_check;
+alter table public.mosque_entries
   drop constraint if exists mosque_entries_basic_module_check;
 alter table public.mosque_entries
-  add constraint mosque_entries_basic_module_check
+  add constraint mosque_entries_module_check
   check (module in (
     'home','mosjid-porichiti','itihas','motawalli','committee',
     'prayer','special-prayer','notices','news','islamic-learning',
