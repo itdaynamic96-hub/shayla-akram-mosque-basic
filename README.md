@@ -17,9 +17,9 @@
 1. আলাদা Supabase project \`shayla-akram-mosque-basic\` ব্যবহার করুন।
 2. এই Project-এ \`admin_profiles\`, \`mosque_entries\`, \`donation_records\` টেবিল থাকলে \`schema.sql\` পুনরায় চালানোর প্রয়োজন নেই।
 3. SQL Editor-এ \`supabase/migrate-basic-modules.sql\` চালান।
-4. Authentication → Users-এ অনুমোদিত Auth user আছে এবং Email Confirmed হয়েছে কি না নিশ্চিত করুন।
+5. Authentication → Users-এ অনুমোদিত Auth user আছে এবং Email Confirmed হয়েছে কি না নিশ্চিত করুন।
 5. \`supabase/activate-basic-owner.sql\`-এ নির্দিষ্ট Auth UUID ও ইমেইল যাচাই করে SQL Editor-এ চালান।
-6. Authentication settings-এ Public Sign-ups বন্ধ রাখুন।
+7. Authentication settings-এ Public Sign-ups বন্ধ রাখুন।
 7. Auth URL configuration-এ Site URL: \`https://itdaynamic96-hub.github.io\` এবং Redirect URL: \`https://itdaynamic96-hub.github.io/shayla-akram-mosque-basic/**\` রাখুন।
 8. ইমেইল recovery পাঠাতে নিজস্ব SMTP সেটআপ প্রয়োজন হতে পারে।
 9. কখনো service_role/secret key browser বা GitHub repository-তে রাখবেন না।
