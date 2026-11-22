@@ -87,7 +87,7 @@ async function loadDonations(){
  const pending=donations.filter(r=>r.payment_status==="pending").reduce((s,r)=>s+Number(r.amount||0),0);
  const rejected=donations.filter(r=>r.payment_status==="rejected").reduce((s,r)=>s+Number(r.amount||0),0);
  const summary=$("donationSummary");
- if(summary)summary.innerHTML='<div class="donation-stats"><div><small>মোট যাচাইকৃত</small><strong>৳'+verified.toLocaleString("bn-BD")+'</strong></div><div><small>যাচাই বাকি</small><strong>৳'+pending.toLocaleString("bn-BD")+'</strong></div><div><small>বাতিল</small><strong>৳'+rejected.toLocaleString("bn-BD")+'</strong></div></div>';
+ if(summary)summary.innerHTML='<div class="donation-stats"><div><small>তালিকাভুক্ত যাচাইকৃত</small><strong>৳'+verified.toLocaleString("bn-BD")+'</strong></div><div><small>তালিকাভুক্ত যাচাই বাকি</small><strong>৳'+pending.toLocaleString("bn-BD")+'</strong></div><div><small>তালিকাভুক্ত বাতিল</small><strong>৳'+rejected.toLocaleString("bn-BD")+'</strong></div></div>';
  list.innerHTML=donations.map(r=>'<article class="notice-card"><strong>৳'+Number(r.amount||0).toLocaleString("bn-BD",{minimumFractionDigits:2})+'</strong><p>দাতা: '+esc(r.donor_name||"নাম প্রকাশ করা হয়নি")+' · '+esc(r.received_on||"")+' · '+labelDonation(r.payment_status)+'</p><p>উৎস: '+esc(r.source||"")+' · রসিদ: '+esc(r.receipt_no||"—")+'</p>'+(canWrite()&&r.payment_status!=="verified"?'<button class="btn btn-outline" data-donation-status="verified" data-id="'+r.id+'">যাচাই করুন</button>':"")+(canWrite()&&r.payment_status!=="rejected"?'<button class="btn btn-outline" data-donation-status="rejected" data-id="'+r.id+'">বাতিল করুন</button>':"")+'</article>').join("")||'<div class="empty-state">এখনো কোনো অনুদান নথিভুক্ত হয়নি।</div>';
  list.querySelectorAll("[data-donation-status]").forEach(b=>b.onclick=()=>setDonationStatus(b.dataset.id,b.dataset.donationStatus));
 }
@@ -130,6 +130,25 @@ $("cancelEditBtn").onclick=reset;
 body.addEventListener("input",()=>{if(countWords(body.value)>500){body.value=clampWords(body.value);setMessage("saveMessage","সর্বোচ্চ ৫০০ শব্দ রাখা হয়েছে।")}$("wordCount").textContent=countWords(body.value)+" / ৫০০ শব্দ"});
 body.addEventListener("paste",e=>{const t=(e.clipboardData||window.clipboardData).getData("text");if(countWords(body.value+" "+t)>500){e.preventDefault();setMessage("saveMessage","পেস্ট করা লেখাসহ মোট শব্দ ৫০০-এর বেশি হতে পারবে না।")}});
 $("donationDate").value=new Date().toISOString().slice(0,10);
+client.auth.onAuthStateChange((event)=>{
+ if(event==="PASSWORD_RECOVERY"){
+  $("loginBox").classList.add("hidden");
+  $("recoveryBox").classList.remove("hidden");
+ }
+});
+$("recoveryForm")?.addEventListener("submit",async e=>{
+ e.preventDefault();
+ const password=$("newPassword").value,confirm=$("confirmPassword").value;
+ if(password.length<8){setMessage("recoveryMessage","পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।");return}
+ if(password!==confirm){setMessage("recoveryMessage","দুটি পাসওয়ার্ড মিলছে না।");return}
+ const {error}=await client.auth.updateUser({password});
+ if(error){setMessage("recoveryMessage","পাসওয়ার্ড পরিবর্তন হয়নি: "+error.message);return}
+ setMessage("recoveryMessage","পাসওয়ার্ড সফলভাবে পরিবর্তিত হয়েছে। এখন লগইন করুন।");
+ await client.auth.signOut();
+ $("recoveryForm").reset();
+ $("recoveryBox").classList.add("hidden");
+ $("loginBox").classList.remove("hidden");
+});
 $("forgotPasswordBtn")?.addEventListener("click",async()=>{
  const email=$("email").value.trim();
  if(!email){setMessage("loginMessage","পাসওয়ার্ড রিসেট লিংক পাঠাতে আগে ইমেইল লিখুন।");$("email").focus();return}
