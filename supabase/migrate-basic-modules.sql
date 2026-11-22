@@ -61,4 +61,29 @@ using (
 );
 
 -- Existing schema.sql upload/update policies use current_admin_role().
+
+-- Donation hardening: editors may register only pending donations.
+-- Only owner/admin can verify, reject, or delete donation records.
+drop policy if exists "staff manage donations" on public.donation_records;
+drop policy if exists "basic donations read" on public.donation_records;
+drop policy if exists "basic donations insert" on public.donation_records;
+drop policy if exists "basic donations update" on public.donation_records;
+drop policy if exists "basic donations delete" on public.donation_records;
+create policy "basic donations read" on public.donation_records
+for select to authenticated
+using (public.current_admin_role() in ('owner','admin','editor'));
+create policy "basic donations insert" on public.donation_records
+for insert to authenticated
+with check (
+  (public.current_admin_role() in ('owner','admin'))
+  or (public.current_admin_role()='editor' and created_by=auth.uid() and payment_status='pending')
+);
+create policy "basic donations update" on public.donation_records
+for update to authenticated
+using (public.current_admin_role() in ('owner','admin'))
+with check (public.current_admin_role() in ('owner','admin'));
+create policy "basic donations delete" on public.donation_records
+for delete to authenticated
+using (public.current_admin_role() in ('owner','admin'));
+
 notify pgrst, 'reload schema';
