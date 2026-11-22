@@ -68,3 +68,9 @@ test("public website uses the stylesheet and browser app entry points", () => {
   assert.match(index, /src="app\.js"/);
   assert.match(index, /src="supabase-config\.js"/);
 });
+
+test("donation date defaults use the browser's local calendar date, not UTC", () => {
+  assert.match(admin, /const localDateString=\(\)=>/);
+  assert.equal((admin.match(/localDateString\(\)/g) || []).length, 2);
+  assert.doesNotMatch(admin, /toISOString\(\)\.slice\(0,10\)/);
+});
