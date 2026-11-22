@@ -90,6 +90,7 @@ async function loadDonations(){
  if(summary)summary.innerHTML='<div class="donation-stats"><div><small>মোট যাচাইকৃত</small><strong>৳'+verified.toLocaleString("bn-BD")+'</strong></div><div><small>যাচাই বাকি</small><strong>৳'+pending.toLocaleString("bn-BD")+'</strong></div><div><small>বাতিল</small><strong>৳'+rejected.toLocaleString("bn-BD")+'</strong></div></div>';
  list.innerHTML=donations.map(r=>'<article class="notice-card"><strong>৳'+Number(r.amount||0).toLocaleString("bn-BD",{minimumFractionDigits:2})+'</strong><p>দাতা: '+esc(r.donor_name||"নাম প্রকাশ করা হয়নি")+' · '+esc(r.received_on||"")+' · '+labelDonation(r.payment_status)+'</p><p>উৎস: '+esc(r.source||"")+' · রসিদ: '+esc(r.receipt_no||"—")+'</p>'+(canWrite()&&r.payment_status!=="verified"?'<button class="btn btn-outline" data-donation-status="verified" data-id="'+r.id+'">যাচাই করুন</button>':"")+(canWrite()&&r.payment_status!=="rejected"?'<button class="btn btn-outline" data-donation-status="rejected" data-id="'+r.id+'">বাতিল করুন</button>':"")+'</article>').join("")||'<div class="empty-state">এখনো কোনো অনুদান নথিভুক্ত হয়নি।</div>';
  list.querySelectorAll("[data-donation-status]").forEach(b=>b.onclick=()=>setDonationStatus(b.dataset.id,b.dataset.donationStatus));
+}
 const labelDonation=s=>({pending:"যাচাই বাকি",verified:"যাচাইকৃত",rejected:"বাতিল"}[s]||s);
 async function setDonationStatus(id,status){
  const r=donations.find(x=>x.id===id);if(!r||!canWrite()||!["verified","rejected"].includes(status))return;
