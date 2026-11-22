@@ -115,7 +115,7 @@ $("donationForm").addEventListener("submit",async e=>{
  const amount=Number($("donationAmount").value);if(!Number.isFinite(amount)||amount<=0){setMessage("donationMessage","সঠিক অনুদানের পরিমাণ লিখুন।");return}
  const payload={donor_name:$("donorName").value.trim()||null,amount,currency:"BDT",source:$("donationSource").value.trim()||"নগদ",received_on:$("donationDate").value,receipt_no:$("receiptNo").value.trim()||null,payment_status:isAdmin()?$("paymentStatus").value:"pending",note:$("donationNote").value.trim()||null,created_by:user.id};
  const {error}=await client.from("donation_records").insert(payload);
- setMessage("donationMessage",error?"অনুদান নথিভুক্ত হয়নি: "+error.message:"অনুদান নথিভুক্ত হয়েছে।");if(!error){$("donationForm").reset();$("donationDate").value=new Date().toISOString().slice(0,10);await loadDonations()}
+ setMessage("donationMessage",error?"অনুদান নথিভুক্ত হয়নি: "+error.message:"অনুদান নথিভুক্ত হয়েছে।");if(!error){$("donationForm").reset();$("donationDate").value=localDateString();await loadDonations()}
 });
 function renderGallery(){
  const list=$("galleryList");if(!list)return;
@@ -142,7 +142,7 @@ $("logoutBtn").onclick=async()=>{await client.auth.signOut();location.reload()};
 $("cancelEditBtn").onclick=reset;
 body.addEventListener("input",()=>{if(countWords(body.value)>500){body.value=clampWords(body.value);setMessage("saveMessage","সর্বোচ্চ ৫০০ শব্দ রাখা হয়েছে।")}$("wordCount").textContent=countWords(body.value)+" / ৫০০ শব্দ"});
 body.addEventListener("paste",e=>{const t=(e.clipboardData||window.clipboardData).getData("text");if(countWords(body.value+" "+t)>500){e.preventDefault();setMessage("saveMessage","পেস্ট করা লেখাসহ মোট শব্দ ৫০০-এর বেশি হতে পারবে না।")}});
-$("donationDate").value=new Date().toISOString().slice(0,10);
+$("donationDate").value=localDateString();
 if(client)client.auth.onAuthStateChange((event)=>{
  if(event==="PASSWORD_RECOVERY"){
   $("loginBox").classList.add("hidden");
