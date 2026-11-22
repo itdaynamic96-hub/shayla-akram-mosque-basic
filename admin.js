@@ -18,7 +18,7 @@ function statusOptions(){const allowed=isAdmin()?[["draft","খসড়া"],["pen
 const rowMeta=r=>r.metadata||{};
 function renderEntryActions(r){
  const actions=[];
- if(canWrite()&&(isAdmin()||r.created_by===user.id)&&["draft","pending","rejected"].includes(r.status))actions.push('<button class="btn btn-outline" data-edit="'+r.id+'">সম্পাদনা</button>');
+ if(canWrite()&&(isAdmin()||r.created_by===user.id)&&(isAdmin()||["draft","pending","rejected"].includes(r.status)))actions.push('<button class="btn btn-outline" data-edit="'+r.id+'">সম্পাদনা</button>');
  if(canReview()&&r.status!=="approved")actions.push('<button class="btn btn-outline" data-state="approved" data-id="'+r.id+'">অনুমোদন</button>');
  if(canReview()&&r.status!=="rejected")actions.push('<button class="btn btn-outline" data-state="rejected" data-id="'+r.id+'">বাতিল</button>');
  if(isAdmin()&&r.status!=="published")actions.push('<button class="btn btn-outline" data-state="published" data-id="'+r.id+'">প্রকাশ</button>');
@@ -44,7 +44,7 @@ async function checkSession(){
  statusOptions();
  if(!canWrite())form.classList.add("hidden");
  if(canWrite()){$("donationManager").classList.remove("hidden");$("galleryManager").classList.remove("hidden")}else{$("donationManager").classList.add("hidden");$("galleryManager").classList.add("hidden")}
- await loadEntries();await loadDonations();
+ await loadEntries();if(canWrite())await loadDonations();
 }
 function bindEntryActions(container){
  container.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editEntry(b.dataset.edit));
@@ -81,14 +81,20 @@ async function loadDonations(){
  const list=$("donationList");if(!list)return;
  const {data,error}=await client.from("donation_records").select("id,donor_name,amount,currency,source,received_on,receipt_no,payment_status,note,created_by,created_at").order("received_on",{ascending:false}).limit(200);
  if(error){list.textContent="অনুদানের হিসাব লোড হয়নি: "+error.message;return}
+
  donations=data||[];
- list.innerHTML=donations.map(r=>'<article class="notice-card"><strong>৳'+Number(r.amount||0).toLocaleString("en-US",{minimumFractionDigits:2})+'</strong><p>দাতা: '+esc(r.donor_name||"নাম প্রকাশ করা হয়নি")+' · '+esc(r.received_on||"")+' · '+esc(r.payment_status||"pending")+'</p><p>উৎস: '+esc(r.source||"")+' · রসিদ: '+esc(r.receipt_no||"—")+'</p>'+(canWrite()&&r.payment_status!=="verified"?'<button class="btn btn-outline" data-verify-donation="'+r.id+'">অনুদান যাচাই করুন</button>':"")+'</article>').join("")||'<div class="empty-state">এখনো কোনো অনুদান নথিভুক্ত হয়নি।</div>';
- list.querySelectorAll("[data-verify-donation]").forEach(b=>b.onclick=()=>verifyDonation(b.dataset.verifyDonation));
-}
-async function verifyDonation(id){
- const r=donations.find(x=>x.id===id);if(!r||!canWrite())return;
- const {error}=await client.from("donation_records").update({payment_status:"verified"}).eq("id",id);
- setMessage("donationMessage",error?"যাচাই করা যায়নি: "+error.message:"অনুদান যাচাইকৃত হিসেবে সংরক্ষিত হয়েছে।");if(!error)await loadDonations();
+ const verified=donations.filter(r=>r.payment_status==="verified").reduce((s,r)=>s+Number(r.amount||0),0);
+ const pending=donations.filter(r=>r.payment_status==="pending").reduce((s,r)=>s+Number(r.amount||0),0);
+ const rejected=donations.filter(r=>r.payment_status==="rejected").reduce((s,r)=>s+Number(r.amount||0),0);
+ const summary=$("donationSummary");
+ if(summary)summary.innerHTML='<div class="donation-stats"><div><small>মোট যাচাইকৃত</small><strong>৳'+verified.toLocaleString("bn-BD")+'</strong></div><div><small>যাচাই বাকি</small><strong>৳'+pending.toLocaleString("bn-BD")+'</strong></div><div><small>বাতিল</small><strong>৳'+rejected.toLocaleString("bn-BD")+'</strong></div></div>';
+ list.innerHTML=donations.map(r=>'<article class="notice-card"><strong>৳'+Number(r.amount||0).toLocaleString("bn-BD",{minimumFractionDigits:2})+'</strong><p>দাতা: '+esc(r.donor_name||"নাম প্রকাশ করা হয়নি")+' · '+esc(r.received_on||"")+' · '+labelDonation(r.payment_status)+'</p><p>উৎস: '+esc(r.source||"")+' · রসিদ: '+esc(r.receipt_no||"—")+'</p>'+(canWrite()&&r.payment_status!=="verified"?'<button class="btn btn-outline" data-donation-status="verified" data-id="'+r.id+'">যাচাই করুন</button>':"")+(canWrite()&&r.payment_status!=="rejected"?'<button class="btn btn-outline" data-donation-status="rejected" data-id="'+r.id+'">বাতিল করুন</button>':"")+'</article>').join("")||'<div class="empty-state">এখনো কোনো অনুদান নথিভুক্ত হয়নি।</div>';
+ list.querySelectorAll("[data-donation-status]").forEach(b=>b.onclick=()=>setDonationStatus(b.dataset.id,b.dataset.donationStatus));
+const labelDonation=s=>({pending:"যাচাই বাকি",verified:"যাচাইকৃত",rejected:"বাতিল"}[s]||s);
+async function setDonationStatus(id,status){
+ const r=donations.find(x=>x.id===id);if(!r||!canWrite()||!["verified","rejected"].includes(status))return;
+ const {error}=await client.from("donation_records").update({payment_status:status}).eq("id",id);
+ setMessage("donationMessage",error?"অনুদানের অবস্থা পরিবর্তন হয়নি: "+error.message:(status==="verified"?"অনুদান যাচাইকৃত হিসেবে সংরক্ষিত হয়েছে।":"অনুদান বাতিল হিসেবে সংরক্ষিত হয়েছে।"));if(!error)await loadDonations();
 }
 $("donationForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!client||!canWrite())return;
@@ -123,4 +129,11 @@ $("cancelEditBtn").onclick=reset;
 body.addEventListener("input",()=>{if(countWords(body.value)>500){body.value=clampWords(body.value);setMessage("saveMessage","সর্বোচ্চ ৫০০ শব্দ রাখা হয়েছে।")}$("wordCount").textContent=countWords(body.value)+" / ৫০০ শব্দ"});
 body.addEventListener("paste",e=>{const t=(e.clipboardData||window.clipboardData).getData("text");if(countWords(body.value+" "+t)>500){e.preventDefault();setMessage("saveMessage","পেস্ট করা লেখাসহ মোট শব্দ ৫০০-এর বেশি হতে পারবে না।")}});
 $("donationDate").value=new Date().toISOString().slice(0,10);
+$("forgotPasswordBtn")?.addEventListener("click",async()=>{
+ const email=$("email").value.trim();
+ if(!email){setMessage("loginMessage","পাসওয়ার্ড রিসেট লিংক পাঠাতে আগে ইমেইল লিখুন।");$("email").focus();return}
+ if(!client){setMessage("loginMessage","Supabase সংযোগ কনফিগার করা নেই।");return}
+ const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+ setMessage("loginMessage",error?"রিসেট ইমেইল পাঠানো যায়নি: "+error.message:"ইমেইলটি Supabase-এ থাকলে পাসওয়ার্ড রিসেটের নির্দেশনা পাঠানো হয়েছে। Inbox ও Spam দেখুন।");
+});
 if(client)checkSession();else setMessage("loginMessage","Supabase Project URL ও Publishable key যুক্ত না হওয়া পর্যন্ত লগইন চালু হবে না।");
