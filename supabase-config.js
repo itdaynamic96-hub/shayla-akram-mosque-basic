@@ -1,4 +1,4 @@
-// Supabase-এর Project URL ও Publishable/anon key এখানে বসান।
-// এখানে কখনো service_role বা secret key দেবেন না।
-window.MOSQUE_SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
-window.MOSQUE_SUPABASE_ANON_KEY = "YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY";
+// Supabase public browser configuration for shayla-akram-mosque-basic.
+// Never place a secret/service_role key in this file.
+window.MOSQUE_SUPABASE_URL = "https://lxbsekpiggsmnmkuthsq.supabase.co";
+window.MOSQUE_SUPABASE_ANON_KEY = "sb_publishable_GIl3MGC1N_UU8y1n8xJU8A_0iWxjoCN";
