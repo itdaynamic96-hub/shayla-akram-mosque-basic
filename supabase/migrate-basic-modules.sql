@@ -46,6 +46,7 @@ drop policy if exists "basic mosque media permitted upload" on storage.objects;
 drop policy if exists "basic mosque media permitted update" on storage.objects;
 drop policy if exists "basic mosque media permitted delete" on storage.objects;
 drop policy if exists "basic mosque media public read" on storage.objects;
+drop policy if exists "basic mosque media staff delete" on storage.objects;
 create policy "basic mosque media public read"
 on storage.objects for select to anon, authenticated
 using (bucket_id='mosque-media');
