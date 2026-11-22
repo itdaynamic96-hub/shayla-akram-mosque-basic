@@ -51,10 +51,10 @@ begin
  if tg_op='UPDATE' and actor_role not in ('owner','admin') and (new.created_by is distinct from old.created_by or new.module is distinct from old.module) then
    raise exception 'তথ্যের মালিক বা বিভাগ পরিবর্তনের অনুমতি নেই।' using errcode='42501';
  end if;
- if new.status='approved' and actor_role not in ('owner','admin','reviewer') then raise exception 'এই তথ্য অনুমোদনের অনুমতি নেই।' using errcode='42501'; end if;
- if new.status='rejected' and actor_role not in ('owner','admin','reviewer') then raise exception 'এই তথ্য বাতিলের অনুমতি নেই।' using errcode='42501'; end if;
+ if new.status='approved' and (actor_role is null or actor_role not in ('owner','admin','reviewer')) then raise exception 'এই তথ্য অনুমোদনের অনুমতি নেই।' using errcode='42501'; end if;
+ if new.status='rejected' and (actor_role is null or actor_role not in ('owner','admin','reviewer')) then raise exception 'এই তথ্য বাতিলের অনুমতি নেই।' using errcode='42501'; end if;
  if new.status='published' then
-   if actor_role not in ('owner','admin') then raise exception 'শুধু প্রশাসক প্রকাশ করতে পারবেন।' using errcode='42501'; end if;
+   if actor_role is null or actor_role not in ('owner','admin') then raise exception 'শুধু প্রশাসক প্রকাশ করতে পারবেন।' using errcode='42501'; end if;
    new.published_at:=coalesce(new.published_at,now());
  end if;
  if new.status in ('approved','rejected') then new.reviewed_by:=auth.uid(); end if;
