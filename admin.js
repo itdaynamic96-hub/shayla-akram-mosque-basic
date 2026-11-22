@@ -28,7 +28,7 @@ async function checkSession(){
  $("module").innerHTML=modules.map(m=>'<option value="'+m[1]+'">'+m[2]+'</option>').join("");
  statusOptions();
  if(!canWrite())form.classList.add("hidden");
- if(profile.role!=="super_admin"){$("donationManager").classList.add("hidden");$("galleryManager").classList.add("hidden")}
+ $("donationManager").classList.add("hidden");$("galleryManager").classList.add("hidden");
  await loadEntries();
 }
 async function loadEntries(){
