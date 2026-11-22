@@ -45,6 +45,7 @@ async function checkSession(){
  statusOptions();
  if(!canWrite())form.classList.add("hidden");
  if(canWrite()){$("donationManager").classList.remove("hidden");$("galleryManager").classList.remove("hidden")}else{$("donationManager").classList.add("hidden");$("galleryManager").classList.add("hidden")}
+ if(!isAdmin()){$("paymentStatus").innerHTML='<option value="pending">যাচাই বাকি</option>';$("paymentStatus").disabled=true}else{$("paymentStatus").disabled=false}
  await loadEntries();if(canWrite())await loadDonations();
 }
 function bindEntryActions(container){
@@ -100,7 +101,7 @@ async function loadDonations(){
  const rejected=donations.filter(r=>r.payment_status==="rejected").reduce((s,r)=>s+Number(r.amount||0),0);
  const summary=$("donationSummary");
  if(summary)summary.innerHTML='<div class="donation-stats"><div><small>তালিকাভুক্ত যাচাইকৃত</small><strong>৳'+verified.toLocaleString("bn-BD")+'</strong></div><div><small>তালিকাভুক্ত যাচাই বাকি</small><strong>৳'+pending.toLocaleString("bn-BD")+'</strong></div><div><small>তালিকাভুক্ত বাতিল</small><strong>৳'+rejected.toLocaleString("bn-BD")+'</strong></div></div>';
- list.innerHTML=donations.map(r=>'<article class="notice-card"><strong>৳'+Number(r.amount||0).toLocaleString("bn-BD",{minimumFractionDigits:2})+'</strong><p>দাতা: '+esc(r.donor_name||"নাম প্রকাশ করা হয়নি")+' · '+esc(r.received_on||"")+' · '+labelDonation(r.payment_status)+'</p><p>উৎস: '+esc(r.source||"")+' · রসিদ: '+esc(r.receipt_no||"—")+'</p>'+(canWrite()&&r.payment_status!=="verified"?'<button class="btn btn-outline" data-donation-status="verified" data-id="'+r.id+'">যাচাই করুন</button>':"")+(canWrite()&&r.payment_status!=="rejected"?'<button class="btn btn-outline" data-donation-status="rejected" data-id="'+r.id+'">বাতিল করুন</button>':"")+'</article>').join("")||'<div class="empty-state">এখনো কোনো অনুদান নথিভুক্ত হয়নি।</div>';
+ list.innerHTML=donations.map(r=>'<article class="notice-card"><strong>৳'+Number(r.amount||0).toLocaleString("bn-BD",{minimumFractionDigits:2})+'</strong><p>দাতা: '+esc(r.donor_name||"নাম প্রকাশ করা হয়নি")+' · '+esc(r.received_on||"")+' · '+labelDonation(r.payment_status)+'</p><p>উৎস: '+esc(r.source||"")+' · রসিদ: '+esc(r.receipt_no||"—")+'</p>'+(isAdmin()&&r.payment_status!=="verified"?'<button class="btn btn-outline" data-donation-status="verified" data-id="'+r.id+'">যাচাই করুন</button>':"")+(isAdmin()&&r.payment_status!=="rejected"?'<button class="btn btn-outline" data-donation-status="rejected" data-id="'+r.id+'">বাতিল করুন</button>':"")+'</article>').join("")||'<div class="empty-state">এখনো কোনো অনুদান নথিভুক্ত হয়নি।</div>';
  list.querySelectorAll("[data-donation-status]").forEach(b=>b.onclick=()=>setDonationStatus(b.dataset.id,b.dataset.donationStatus));
 }
 const labelDonation=s=>({pending:"যাচাই বাকি",verified:"যাচাইকৃত",rejected:"বাতিল"}[s]||s);
