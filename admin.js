@@ -4,6 +4,7 @@ const $=id=>document.getElementById(id),form=$("entryForm"),body=$("body");
 const moduleBySlug=Object.fromEntries(modules.map(m=>[m[1],m]));
 const roleNames={owner:"প্রধান প্রশাসক",admin:"অ্যাডমিন",editor:"সম্পাদক",reviewer:"অনুমোদনকারী"};
 let profile=null,user=null,entries=[],donations=[];
+const localDateString=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")};
 const countWords=s=>(s.trim().match(/\S+/g)||[]).length;
 const clampWords=s=>{let n=0;return(s.match(/\S+|\s+/g)||[]).filter(p=>{if(!/\S/.test(p))return true;if(n>=500)return false;n++;return true}).join("")};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
