@@ -15,12 +15,12 @@
 1. আলাদা Supabase project `shayla-akram-mosque-basic` তৈরি করুন।
 2. এই প্রকল্পের বিদ্যমান `profiles`, `module_records` ও `admin_module_permissions` টেবিল ব্যবহার করুন; `supabase/schema.sql` এই বিদ্যমান প্রকল্পে চালাবেন না—এটি পুরোনো আলাদা schema-র নথি।
 3. SQL Editor-এ `supabase/migrate-basic-modules.sql` চালান (১৫ মডিউল, ৫০০ শব্দের সীমা ও গ্যালারি Storage policy)।
-3. Authentication settings-এ Public sign-ups বন্ধ রাখুন।
-4. Authentication > Users থেকে প্রথম admin account তৈরি করুন।
-5. বিদ্যমান `profiles` টেবিলে ওই Auth user-এর UUID-তে উপযুক্ত `role` ও `institution` নিশ্চিত করুন। `admin_profiles` টেবিল তৈরি করবেন না।
-6. Project URL এবং Publishable key `supabase-config.js`-এ কনফিগার করা আছে।
-7. Auth URL configuration-এ Site URL: `https://itdaynamic96-hub.github.io` এবং Redirect URL: `https://itdaynamic96-hub.github.io/shayla-akram-mosque-basic/**` রাখুন।
-8. কখনো service_role/secret key browser বা GitHub repository-তে রাখবেন না।
+4. Authentication settings-এ Public sign-ups বন্ধ রাখুন।
+5. Authentication > Users থেকে প্রথম admin account তৈরি করুন।
+6. বিদ্যমান `profiles` টেবিলে ওই Auth user-এর UUID-তে উপযুক্ত `role` ও `institution` নিশ্চিত করুন। `admin_profiles` টেবিল তৈরি করবেন না।
+7. Project URL এবং Publishable key `supabase-config.js`-এ কনফিগার করা আছে।
+8. Auth URL configuration-এ Site URL: `https://itdaynamic96-hub.github.io` এবং Redirect URL: `https://itdaynamic96-hub.github.io/shayla-akram-mosque-basic/**` রাখুন।
+9. কখনো service_role/secret key browser বা GitHub repository-তে রাখবেন না।
 
 ## ভূমিকা
 - `super_admin`: সব ১৫টি মডিউলের তথ্য তৈরি/সম্পাদনা, অনুমোদন ও প্রকাশ করতে পারবেন।
