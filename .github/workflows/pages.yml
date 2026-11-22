@@ -16,7 +16,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Validate JavaScript syntax\n        run: |\n          node --check app.js\n          node --check admin.js\n      - name: Configure Pages
+      - name: Validate JavaScript syntax
+        run: |
+          node --check app.js
+          node --check admin.js
+      - name: Configure Pages
         uses: actions/configure-pages@v5
         with:
           enablement: true
