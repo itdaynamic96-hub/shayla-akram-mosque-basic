@@ -10,7 +10,7 @@ create table if not exists public.admin_profiles (
 
 create table if not exists public.mosque_entries (
  id uuid primary key default gen_random_uuid(),
- module text not null check (module in ('mosjid-porichiti','itihas','motawalli','committee','prayer','special-prayer','notices','news','islamic-learning','imam','services','donations','gallery','contact')),
+ module text not null check (module in ('home','mosjid-porichiti','itihas','motawalli','committee','prayer','special-prayer','notices','news','islamic-learning','imam','services','donations','gallery','contact')),
  title text not null check (char_length(title) between 1 and 180),
  body text not null default '',
  metadata jsonb not null default '{}'::jsonb,
