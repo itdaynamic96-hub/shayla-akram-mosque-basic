@@ -1,30 +1,37 @@
 # সাকছিপাড়া শায়লা আকরাম কেন্দ্রীয় জামে মসজিদ
-বাংলা-ভিত্তিক Basic Package ওয়েবসাইট। পুরোনো ওয়েবসাইট ও ডেটাবেস থেকে সম্পূর্ণ আলাদা।
 
-## ফাইল
-- `index.html`, `style.css`, `app.js`: পাবলিক ওয়েবসাইট ও ১৪টি বিভাগ
-- `admin.html`, `admin.js`: Supabase Auth লগইন, ভূমিকা-ভিত্তিক কনটেন্ট তৈরি, অনুমোদন/প্রকাশ/মুছে ফেলা
-- `supabase/schema.sql`: টেবিল, RLS, ৫০০ শব্দের server-side যাচাই ও Storage bucket
-- `supabase-config.js`: শুধু public Project URL ও publishable/anon key
+বাংলা-ভিত্তিক Basic Package ওয়েবসাইট। পুরোনো ওয়েবসাইট, GitHub repository এবং Supabase project থেকে সম্পূর্ণ আলাদা।
+
+## ফাইল ও সুবিধা
+- `index.html`, `style.css`, `app.js`: পাবলিক হোমপেজ, ১৪টি স্বতন্ত্র তথ্য বিভাগ, প্রকাশিত নোটিশ, নামাজের সময় ও গ্যালারি মিডিয়া প্রদর্শন।
+- `admin.html`, `admin.js`: Supabase Auth লগইন, ভূমিকা-ভিত্তিক তথ্য তৈরি/সম্পাদনা, অনুমোদন/প্রকাশ/মুছে ফেলা।
+- অ্যাডমিন প্যানেলে অনুদান নথিভুক্তি, রসিদ নম্বর, তারিখ ও যাচাইয়ের অবস্থা।
+- অ্যাডমিন প্যানেলে ছবি/ভিডিও আপলোড; আপলোড করা গ্যালারি তথ্য অনুমোদন ও প্রকাশ না হওয়া পর্যন্ত পাবলিক নয়।
+- বড় বিবরণে সর্বোচ্চ ৫০০ শব্দের ব্রাউজার ও ডেটাবেস যাচাই।
+- `supabase/schema.sql`: টেবিল, RLS, ৫০০ শব্দের server-side যাচাই ও Storage bucket।
+- `supabase-config.js`: শুধু public Project URL ও publishable/anon key। Secret/service_role key এখানে রাখা যাবে না।
 
 ## একবারের Supabase সেটআপ
-1. নতুন Supabase project `shayla-akram-mosque-basic` তৈরি করুন।
-2. SQL Editor-এ `supabase/schema.sql` সম্পূর্ণ চালান।
+1. আলাদা Supabase project `shayla-akram-mosque-basic` তৈরি করুন।
+2. SQL Editor-এ `supabase/schema.sql` চালান।
 3. Authentication settings-এ Public sign-ups বন্ধ রাখুন।
 4. Authentication > Users থেকে প্রথম admin account তৈরি করুন।
-5. ওই user UUID-কে SQL Editor-এ owner profile দিন (ফাইলের শেষের উদাহরণ অনুসরণ করুন)।
-6. Project Settings > API থেকে Project URL এবং Publishable/anon key নিয়ে `supabase-config.js`-এ বসান।
-7. Auth URL configuration-এ Site URL হিসেবে `https://itdaynamic96-hub.github.io` দিন এবং Redirect URL-এ `https://itdaynamic96-hub.github.io/shayla-akram-mosque-basic/**` অনুমোদন করুন।
-8. কখনো service_role/secret key browser-এ রাখবেন না।
+5. ওই user UUID-কে SQL Editor-এ owner profile দিন (schema ফাইলের শেষের উদাহরণ অনুসরণ করুন)।
+6. Project URL এবং Publishable key `supabase-config.js`-এ কনফিগার করা আছে।
+7. Auth URL configuration-এ Site URL: `https://itdaynamic96-hub.github.io` এবং Redirect URL: `https://itdaynamic96-hub.github.io/shayla-akram-mosque-basic/**` রাখুন।
+8. কখনো service_role/secret key browser বা GitHub repository-তে রাখবেন না।
 
 ## ভূমিকা
-- owner/admin: সব কনটেন্ট তৈরি, অনুমোদন, প্রকাশ ও মুছে ফেলতে পারবেন।
-- reviewer: তথ্য অনুমোদন বা বাতিল করতে পারবেন।
-- editor: খসড়া/অনুমোদনের অপেক্ষায় থাকা তথ্য তৈরি করতে পারবেন।
+- owner/admin: সব কনটেন্ট তৈরি, সম্পাদনা, অনুমোদন, প্রকাশ ও মুছে ফেলতে পারবেন; অনুদান যাচাই করতে পারবেন।
+- reviewer: কনটেন্ট অনুমোদন বা বাতিল করতে পারবেন।
+- editor: কনটেন্ট তৈরি এবং নিজের খসড়া/অনুমোদনের অপেক্ষায় থাকা তথ্য সম্পাদনা করতে পারবেন; অনুদান নথিভুক্ত ও মিডিয়া আপলোড করতে পারবেন।
 
 ## GitHub Pages
-GitHub Actions workflow: `.github/workflows/pages.yml`। প্রত্যাশিত ঠিকানা:
-https://itdaynamic96-hub.github.io/shayla-akram-mosque-basic/
+GitHub Actions workflow: `.github/workflows/pages.yml`।
+প্রত্যাশিত ঠিকানা: https://itdaynamic96-hub.github.io/shayla-akram-mosque-basic/
 
-## সীমাবদ্ধতা
-Supabase project creation, SQL execution, Auth user creation এবং public API key configuration প্রকল্পের মালিকের Supabase dashboard-এ করতে হবে। বাস্তব online payment gateway এখনো যুক্ত নয়; donation table কেবল রেকর্ড/যাচাইয়ের ভিত্তি। গ্যালারির Storage bucket/policy প্রস্তুত, কিন্তু upload UI পরবর্তী কাজ।
+## সীমাবদ্ধতা ও মালিকের করণীয়
+- Supabase Auth user তৈরি, SQL চালানো, Site URL/Redirect URL সংরক্ষণ এবং প্রথম owner profile যাচাই প্রকল্পের মালিকের Supabase dashboard-এ করতে হয়।
+- অনুদান মডিউল হাতে পাওয়া অনুদান নথিভুক্তি ও যাচাইয়ের জন্য; বাস্তব online payment gateway এখনো সংযুক্ত নয়।
+- গ্যালারির ফাইল Storage-এ থাকে; বড় ফাইলের জন্য ১০ MB client-side সীমা রয়েছে।
+- নামাজের সময়, যোগাযোগের ফোন/ঠিকানা, কমিটি ও ইতিহাসের বাস্তব তথ্য কর্তৃপক্ষকে দিয়ে অ্যাডমিন প্যানেল থেকে প্রকাশ করতে হবে। কোনো সময় বা ব্যক্তিগত তথ্য অনুমান করে দেখানো হয় না।
