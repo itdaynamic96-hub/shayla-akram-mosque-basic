@@ -4,7 +4,7 @@ create or replace function public.word_count_800(v text) returns boolean
 language sql immutable as $$
   select case
     when btrim(coalesce(v,'')) = '' then true
-    else cardinality(regexp_split_to_array(btrim(v), '\\s+')) <= 800
+    else cardinality(regexp_split_to_array(btrim(v), '\s+')) <= 800
   end
 $$;
 
