@@ -53,7 +53,7 @@ function renderHomepage(rows){
 }
 async function loadPublic(){
  if(!db)return;
- const {data,error}=await db.from("mosque_entries").select("id,module,title,body,metadata,status,published_at,created_at").eq("status","published").order("published_at",{ascending:false,nullsFirst:false}).order("created_at",{ascending:false}).limit(200);
+ const {data,error}=await db.from("mosque_entries").select("id,module,title,body,metadata,status,published_at,created_at").eq("status","published").order("published_at",{ascending:false,nullsFirst:false}).order("created_at",{ascending:false}).limit(1000);
  if(error){console.warn("প্রকাশিত তথ্য লোড হয়নি:",error.message);document.querySelectorAll("[data-public-error]").forEach(x=>x.textContent="তথ্য লোড করা যায়নি। পরে আবার চেষ্টা করুন।");return}
  renderHomepage(data||[]);
 }
