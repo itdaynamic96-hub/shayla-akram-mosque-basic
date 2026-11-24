@@ -6,7 +6,9 @@ const roleNames={owner:"প্রধান প্রশাসক",admin:"অ্�
 let profile=null,user=null,entries=[],donations=[];
 const localDateString=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")};
 const countWords=s=>(s.trim().match(/\S+/g)||[]).length;
-const clampWords=s=>{let n=0;return(s.match(/\S+|\s+/g)||[]).filter(p=>{if(!/\S/.test(p))return true;if(n>=500)return false;n++;return true}).join("")};
+const historyLimit=()=>$("module")?.value==="itihas"?800:0;
+const clampWords=(s,max)=>{let n=0;return(s.match(/\S+|\s+/g)||[]).filter(p=>{if(!/\S/.test(p))return true;if(n>=max)return false;n++;return true}).join("")};
+function updateWordCount(){const max=historyLimit(),count=countWords(body.value);$("wordCount").textContent=max?count+" / "+max+" শব্দ":"শব্দ: "+count+" (ইতিহাস ছাড়া সীমা নেই)";}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const label=s=>({draft:"খসড়া",pending:"অনুমোদনের অপেক্ষায়",approved:"অনুমোদিত",published:"প্রকাশিত",rejected:"বাতিল"}[s]||s);
 const canWrite=()=>["owner","admin","editor"].includes(profile?.role);
@@ -14,7 +16,7 @@ const canReview=()=>["owner","admin","reviewer"].includes(profile?.role);
 const isOwner=()=>profile?.role==="owner";
 const isAdmin=()=>["owner","admin"].includes(profile?.role);
 const setMessage=(id,message)=>{if($(id))$(id).textContent=message};
-function reset(){form.reset();$("editId").value="";$("entryFormTitle").textContent="নতুন তথ্য যোগ করুন";$("saveEntryBtn").textContent="তথ্য সংরক্ষণ করুন";$("cancelEditBtn").classList.add("hidden");$("wordCount").textContent="০ / ৫০০ শব্দ"}
+function reset(){form.reset();$("editId").value="";$("entryFormTitle").textContent="নতুন তথ্য যোগ করুন";$("saveEntryBtn").textContent="তথ্য সংরক্ষণ করুন";$("cancelEditBtn").classList.add("hidden");updateWordCount()}
 function statusOptions(){const allowed=isAdmin()?[["draft","খসড়া"],["pending","অনুমোদনের অপেক্ষায়"],["approved","অনুমোদিত"],["rejected","বাতিল"],["published","প্রকাশিত"]]:[["draft","খসড়া"],["pending","অনুমোদনের অপেক্ষায়"]];$("status").innerHTML=allowed.map(x=>'<option value="'+x[0]+'">'+x[1]+"</option>").join("")}
 const rowMeta=r=>r.metadata||{};
 function renderEntryActions(r){
@@ -62,7 +64,7 @@ async function loadEntries(){
 function editEntry(id){
  const r=entries.find(x=>x.id===id);if(!r||(!isAdmin()&&r.created_by!==user.id))return;
  $("editId").value=r.id;$("module").value=r.module;$("title").value=r.title;$("body").value=r.body||"";$("metadata").value=JSON.stringify(rowMeta(r),null,2);$("status").value=r.status;
- $("entryFormTitle").textContent="তথ্য সম্পাদনা করুন";$("saveEntryBtn").textContent="পরিবর্তন সংরক্ষণ করুন";$("cancelEditBtn").classList.remove("hidden");$("wordCount").textContent=countWords(body.value)+" / ৫০০ শব্দ";form.scrollIntoView({behavior:"smooth",block:"start"});
+ $("entryFormTitle").textContent="তথ্য সম্পাদনা করুন";$("saveEntryBtn").textContent="পরিবর্তন সংরক্ষণ করুন";$("cancelEditBtn").classList.remove("hidden");updateWordCount();form.scrollIntoView({behavior:"smooth",block:"start"});
 }
 async function deleteEntry(id){
  const r=entries.find(x=>x.id===id);if(!r||!isAdmin())return;
@@ -83,7 +85,7 @@ async function changeStatus(id,status){
 }
 form.addEventListener("submit",async e=>{
  e.preventDefault();if(!client||!canWrite())return;
- if(countWords(body.value)>500){setMessage("saveMessage","বিবরণ সর্বোচ্চ ৫০০ শব্দ হতে পারবে।");return}
+ if(historyLimit()&&countWords(body.value)>historyLimit()){setMessage("saveMessage","ইতিহাস সর্বোচ্চ ৮০০ শব্দ হতে পারবে।");return}
  let metadata={};try{metadata=$("metadata").value.trim()?JSON.parse($("metadata").value):{};if(!metadata||Array.isArray(metadata)||typeof metadata!=="object")throw new Error("JSON অবজেক্ট হতে হবে।")}catch(err){setMessage("saveMessage","JSON সঠিক নয়: "+err.message);return}
  const module=$("module").value;if(!moduleBySlug[module]){setMessage("saveMessage","সঠিক মডিউল নির্বাচন করুন।");return}
  const payload={module,title:$("title").value.trim(),body:body.value.trim(),metadata,status:$("status").value};
