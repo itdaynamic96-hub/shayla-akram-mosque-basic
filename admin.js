@@ -3,12 +3,14 @@ const client=window.supabase&&window.MOSQUE_SUPABASE_URL&&window.MOSQUE_SUPABASE
 const $=id=>document.getElementById(id),form=$("entryForm"),body=$("body");
 const moduleBySlug=Object.fromEntries(modules.map(m=>[m[1],m]));
 const roleNames={owner:"প্রধান প্রশাসক",admin:"অ্যাডমিন",editor:"সম্পাদক",reviewer:"অনুমোদনকারী"};
-let profile=null,user=null,entries=[],donations=[];
+let profile=null,user=null,entries=[];
 const localDateString=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")};
 const countWords=s=>(s.trim().match(/\S+/g)||[]).length;
-const historyLimit=()=>{const select=$("module"),option=select?.selectedOptions?.[0],value=String(select?.value||"").toLowerCase(),label=String(option?.textContent||"");return value==="itihas"||value.includes("history")||label.includes("ইতিহাস")?800:0};
+const WORD_LIMIT=800;
 const clampWords=(s,max)=>{let n=0;return(s.match(/\S+|\s+/g)||[]).filter(p=>{if(!/\S/.test(p))return true;if(n>=max)return false;n++;return true}).join("")};
-function updateWordCount(){const max=historyLimit(),count=countWords(body.value);$("wordCount").textContent=max?count+" / "+max+" শব্দ":"শব্দ: "+count+" (ইতিহাস ছাড়া সীমা নেই)";}
+function updateWordCount(){const count=countWords(body.value);$("wordCount").textContent=count+" / "+WORD_LIMIT+" শব্দ";}
+function bindWordLimit(input,counter){const update=()=>{if(countWords(input.value)>WORD_LIMIT){input.value=clampWords(input.value,WORD_LIMIT);setMessage("saveMessage","প্রতিটি লেখার ঘরে সর্বোচ্চ ৮০০ শব্দ রাখা যাবে।")}if(counter)counter.textContent=countWords(input.value)+" / "+WORD_LIMIT+" শব্দ"};input.addEventListener("input",update);input.addEventListener("paste",e=>{const pasted=(e.clipboardData||window.clipboardData).getData("text");if(countWords(input.value+" "+pasted)>WORD_LIMIT){e.preventDefault();setMessage("saveMessage","পেস্টসহ সর্বোচ্চ ৮০০ শব্দ রাখা যাবে।")}});update();}
+function writingFieldsValid(){return ["title","body","metadata"].every(id=>countWords($(id).value)<=WORD_LIMIT)}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const label=s=>({draft:"খসড়া",pending:"অনুমোদনের অপেক্ষায়",approved:"অনুমোদিত",published:"প্রকাশিত",rejected:"বাতিল"}[s]||s);
 const canWrite=()=>["owner","admin","editor"].includes(profile?.role);
@@ -47,9 +49,8 @@ async function checkSession(){
  $("module").innerHTML=modules.map(m=>'<option value="'+m[1]+'">'+m[2]+"</option>").join("");
  statusOptions();
  if(!canWrite())form.classList.add("hidden");
- if(canWrite()){$("donationManager").classList.remove("hidden");$("galleryManager").classList.remove("hidden")}else{$("donationManager").classList.add("hidden");$("galleryManager").classList.add("hidden")}
- if(!isAdmin()){$("paymentStatus").innerHTML='<option value="pending">যাচাই বাকি</option>';$("paymentStatus").disabled=true}else{$("paymentStatus").disabled=false}
- await loadEntries();if(canWrite())await loadDonations();
+ if(canWrite())$("galleryManager").classList.remove("hidden");else $("galleryManager").classList.add("hidden");
+ await loadEntries();
 }
 function bindEntryActions(container){
  container.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editEntry(b.dataset.edit));
@@ -85,40 +86,13 @@ async function changeStatus(id,status){
 }
 form.addEventListener("submit",async e=>{
  e.preventDefault();if(!client||!canWrite())return;
- if(historyLimit()&&countWords(body.value)>historyLimit()){setMessage("saveMessage","ইতিহাস সর্বোচ্চ ৮০০ শব্দ হতে পারবে।");return}
+ if(!writingFieldsValid()){setMessage("saveMessage","শিরোনাম, বিবরণ ও অতিরিক্ত তথ্য—প্রতিটি ঘরে সর্বোচ্চ ৮০০ শব্দ রাখা যাবে।");return}
  let metadata={};try{metadata=$("metadata").value.trim()?JSON.parse($("metadata").value):{};if(!metadata||Array.isArray(metadata)||typeof metadata!=="object")throw new Error("JSON অবজেক্ট হতে হবে।")}catch(err){setMessage("saveMessage","JSON সঠিক নয়: "+err.message);return}
  const module=$("module").value;if(!moduleBySlug[module]){setMessage("saveMessage","সঠিক মডিউল নির্বাচন করুন।");return}
  const payload={module,title:$("title").value.trim(),body:body.value.trim(),metadata,status:$("status").value};
  const result=$("editId").value?await client.from("mosque_entries").update(payload).eq("id",$("editId").value):await client.from("mosque_entries").insert({...payload,created_by:user.id});
  setMessage("saveMessage",result.error?"সংরক্ষণ হয়নি: "+result.error.message:"তথ্য সংরক্ষিত হয়েছে।");
  if(!result.error){reset();await loadEntries()}
-});
-async function loadDonations(){
- const list=$("donationList");if(!list)return;
- const {data,error}=await client.from("donation_records").select("id,donor_name,amount,currency,source,received_on,receipt_no,payment_status,note,created_by,created_at").order("received_on",{ascending:false}).limit(200);
- if(error){list.textContent="অনুদানের হিসাব লোড হয়নি: "+error.message;return}
-
- donations=data||[];
- const verified=donations.filter(r=>r.payment_status==="verified").reduce((s,r)=>s+Number(r.amount||0),0);
- const pending=donations.filter(r=>r.payment_status==="pending").reduce((s,r)=>s+Number(r.amount||0),0);
- const rejected=donations.filter(r=>r.payment_status==="rejected").reduce((s,r)=>s+Number(r.amount||0),0);
- const summary=$("donationSummary");
- if(summary)summary.innerHTML='<div class="donation-stats"><div><small>তালিকাভুক্ত যাচাইকৃত</small><strong>৳'+verified.toLocaleString("bn-BD")+'</strong></div><div><small>তালিকাভুক্ত যাচাই বাকি</small><strong>৳'+pending.toLocaleString("bn-BD")+'</strong></div><div><small>তালিকাভুক্ত বাতিল</small><strong>৳'+rejected.toLocaleString("bn-BD")+'</strong></div></div>';
- list.innerHTML=donations.map(r=>'<article class="notice-card"><strong>৳'+Number(r.amount||0).toLocaleString("bn-BD",{minimumFractionDigits:2})+'</strong><p>দাতা: '+esc(r.donor_name||"নাম প্রকাশ করা হয়নি")+' · '+esc(r.received_on||"")+' · '+labelDonation(r.payment_status)+'</p><p>উৎস: '+esc(r.source||"")+' · রসিদ: '+esc(r.receipt_no||"—")+'</p>'+(isAdmin()&&r.payment_status!=="verified"?'<button class="btn btn-outline" data-donation-status="verified" data-id="'+r.id+'">যাচাই করুন</button>':"")+(isAdmin()&&r.payment_status!=="rejected"?'<button class="btn btn-outline" data-donation-status="rejected" data-id="'+r.id+'">বাতিল করুন</button>':"")+'</article>').join("")||'<div class="empty-state">এখনো কোনো অনুদান নথিভুক্ত হয়নি।</div>';
- list.querySelectorAll("[data-donation-status]").forEach(b=>b.onclick=()=>setDonationStatus(b.dataset.id,b.dataset.donationStatus));
-}
-const labelDonation=s=>({pending:"যাচাই বাকি",verified:"যাচাইকৃত",rejected:"বাতিল"}[s]||s);
-async function setDonationStatus(id,status){
- const r=donations.find(x=>x.id===id);if(!r||!isAdmin()||!["verified","rejected"].includes(status))return;
- const {error}=await client.from("donation_records").update({payment_status:status}).eq("id",id);
- setMessage("donationMessage",error?"অনুদানের অবস্থা পরিবর্তন হয়নি: "+error.message:(status==="verified"?"অনুদান যাচাইকৃত হিসেবে সংরক্ষিত হয়েছে।":"অনুদান বাতিল হিসেবে সংরক্ষিত হয়েছে।"));if(!error)await loadDonations();
-}
-$("donationForm").addEventListener("submit",async e=>{
- e.preventDefault();if(!client||!canWrite())return;
- const amount=Number($("donationAmount").value);if(!Number.isFinite(amount)||amount<=0){setMessage("donationMessage","সঠিক অনুদানের পরিমাণ লিখুন।");return}
- const payload={donor_name:$("donorName").value.trim()||null,amount,currency:"BDT",source:$("donationSource").value.trim()||"নগদ",received_on:$("donationDate").value,receipt_no:$("receiptNo").value.trim()||null,payment_status:isAdmin()?$("paymentStatus").value:"pending",note:$("donationNote").value.trim()||null,created_by:user.id};
- const {error}=await client.from("donation_records").insert(payload);
- setMessage("donationMessage",error?"অনুদান নথিভুক্ত হয়নি: "+error.message:"অনুদান নথিভুক্ত হয়েছে।");if(!error){$("donationForm").reset();$("donationDate").value=localDateString();await loadDonations()}
 });
 function renderGallery(){
  const list=$("galleryList");if(!list)return;
@@ -143,9 +117,7 @@ $("galleryForm").addEventListener("submit",async e=>{
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!client){setMessage("loginMessage","Supabase সংযোগ কনফিগার করা নেই।");return}const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error){setMessage("loginMessage","লগইন ব্যর্থ: "+error.message);return}await checkSession()});
 $("logoutBtn").onclick=async()=>{await client.auth.signOut();location.reload()};
 $("cancelEditBtn").onclick=reset;
-body.addEventListener("input",()=>{const max=historyLimit();if(max&&countWords(body.value)>max){body.value=clampWords(body.value,max);setMessage("saveMessage","ইতিহাস সর্বোচ্চ ৮০০ শব্দ রাখা হয়েছে।")}updateWordCount()});
-body.addEventListener("paste",e=>{const max=historyLimit(),t=(e.clipboardData||window.clipboardData).getData("text");if(max&&countWords(body.value+" "+t)>max){e.preventDefault();setMessage("saveMessage","ইতিহাসে পেস্টসহ মোট শব্দ ৮০০-এর বেশি হতে পারবে না।")}});
-$("donationDate").value=localDateString();
+bindWordLimit($("title"),$("titleWordCount"));bindWordLimit(body,$("wordCount"));bindWordLimit($("metadata"),$("metadataWordCount"));
 if(client)client.auth.onAuthStateChange((event)=>{
  if(event==="PASSWORD_RECOVERY"){
   $("loginBox").classList.add("hidden");
