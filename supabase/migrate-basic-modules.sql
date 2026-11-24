@@ -11,7 +11,7 @@ begin
   end if;
 end $$;
 
--- Keep all 15 fixed modules and enforce the server-side 500-word limit.
+-- Keep all 15 fixed modules; only the history module has an 800-word limit.
 alter table public.mosque_entries
   drop constraint if exists mosque_entries_module_check;
 alter table public.mosque_entries
@@ -26,9 +26,19 @@ alter table public.mosque_entries
 
 alter table public.mosque_entries
   drop constraint if exists mosque_entries_basic_body_500_check;
+create or replace function public.word_count_800(v text) returns boolean
+language sql immutable as $
+ select case
+   when btrim(coalesce(v,''))='' then 0
+   else cardinality(regexp_split_to_array(btrim(v), '\s+'))
+ end <= 800
+$;
+
 alter table public.mosque_entries
-  add constraint mosque_entries_basic_body_500_check
-  check (public.word_count_500(body));
+  drop constraint if exists mosque_entries_history_body_800_check;
+alter table public.mosque_entries
+  add constraint mosque_entries_history_body_800_check
+  check (module <> 'itihas' or public.word_count_800(body));
 
 -- Row-level security policies remain authoritative.
 grant select on public.mosque_entries to anon, authenticated;
