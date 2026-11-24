@@ -27,8 +27,9 @@ test("apps use the existing admin_profiles, mosque_entries and donation_records 
   assert.doesNotMatch(admin + app, /from\("(profiles|module_records)"\)/);
 });
 
-test("admin validates 500 words, separates reviewer actions, and supports gallery uploads", () => {
-  assert.match(admin, /countWords\(body\.value\)>500/);
+test("admin limits only history to 800 words, separates reviewer actions, and supports gallery uploads", () => {
+  assert.match(admin, /historyLimit\(\)=>\$\("module"\)\?\.value==="itihas"\?800:0/);
+  assert.match(admin, /historyLimit\(\)&&countWords\(body\.value\)>historyLimit\(\)/);
   assert.match(admin, /canReview/);
   assert.match(admin, /donationForm.*addEventListener/s);
   assert.match(admin, /galleryForm.*addEventListener/s);
@@ -38,7 +39,7 @@ test("admin validates 500 words, separates reviewer actions, and supports galler
 test("migration targets the existing schema and does not invoke obsolete authorization functions", () => {
   assert.match(migration, /mosque_entries/);
   assert.match(migration, /donation_records/);
-  assert.match(migration, /word_count_500/);
+  assert.match(migration, /word_count_800/);
   assert.match(migration, /admin_profiles/);
   assert.match(migration, /mosque-media/);
   const executableSql = migration.replace(/^--.*$/gm, "");
