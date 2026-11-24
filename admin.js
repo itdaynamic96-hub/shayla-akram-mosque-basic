@@ -102,6 +102,7 @@ function renderGallery(){
 $("galleryForm").addEventListener("submit",async e=>{
  e.preventDefault();if(!client||!canWrite())return;
  const file=$("mediaFile").files[0],title=$("mediaTitle").value.trim(),caption=$("mediaCaption").value.trim();
+ if(countWords(title)>WORD_LIMIT||countWords(caption)>WORD_LIMIT){setMessage("galleryMessage","শিরোনাম ও বিবরণ—প্রতিটি ঘরে সর্বোচ্চ ৮০০ শব্দ রাখা যাবে।");return}
  if(!file){setMessage("galleryMessage","একটি ছবি বা ভিডিও নির্বাচন করুন।");return}
  if(file.size>10*1024*1024){setMessage("galleryMessage","ফাইল সর্বোচ্চ ১০ MB হতে পারবে।");return}
  if(!(file.type.startsWith("image/")||["video/mp4","video/webm"].includes(file.type))){setMessage("galleryMessage","শুধু ছবি, MP4 বা WebM ভিডিও আপলোড করা যাবে।");return}
@@ -117,7 +118,7 @@ $("galleryForm").addEventListener("submit",async e=>{
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!client){setMessage("loginMessage","Supabase সংযোগ কনফিগার করা নেই।");return}const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error){setMessage("loginMessage","লগইন ব্যর্থ: "+error.message);return}await checkSession()});
 $("logoutBtn").onclick=async()=>{await client.auth.signOut();location.reload()};
 $("cancelEditBtn").onclick=reset;
-bindWordLimit($("title"),$("titleWordCount"));bindWordLimit(body,$("wordCount"));bindWordLimit($("metadata"),$("metadataWordCount"));
+bindWordLimit($("title"),$("titleWordCount"));bindWordLimit(body,$("wordCount"));bindWordLimit($("metadata"),$("metadataWordCount"));bindWordLimit($("mediaTitle"),$("mediaTitleWordCount"));bindWordLimit($("mediaCaption"),$("mediaCaptionWordCount"));
 if(client)client.auth.onAuthStateChange((event)=>{
  if(event==="PASSWORD_RECOVERY"){
   $("loginBox").classList.add("hidden");
