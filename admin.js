@@ -175,3 +175,4 @@ $("forgotPasswordBtn")?.addEventListener("click",async()=>{
 if(client)checkSession();else setMessage("loginMessage","Supabase Project URL ও Publishable key যুক্ত না হওয়া পর্যন্ত লগইন চালু হবে না।");
 
 $("module").addEventListener("change",updateWordCount);
+updateWordCount();
