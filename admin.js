@@ -143,8 +143,8 @@ $("galleryForm").addEventListener("submit",async e=>{
 $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!client){setMessage("loginMessage","Supabase সংযোগ কনফিগার করা নেই।");return}const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error){setMessage("loginMessage","লগইন ব্যর্থ: "+error.message);return}await checkSession()});
 $("logoutBtn").onclick=async()=>{await client.auth.signOut();location.reload()};
 $("cancelEditBtn").onclick=reset;
-body.addEventListener("input",()=>{if(countWords(body.value)>500){body.value=clampWords(body.value);setMessage("saveMessage","সর্বোচ্চ ৫০০ শব্দ রাখা হয়েছে।")}$("wordCount").textContent=countWords(body.value)+" / ৫০০ শব্দ"});
-body.addEventListener("paste",e=>{const t=(e.clipboardData||window.clipboardData).getData("text");if(countWords(body.value+" "+t)>500){e.preventDefault();setMessage("saveMessage","পেস্ট করা লেখাসহ মোট শব্দ ৫০০-এর বেশি হতে পারবে না।")}});
+body.addEventListener("input",()=>{const max=historyLimit();if(max&&countWords(body.value)>max){body.value=clampWords(body.value,max);setMessage("saveMessage","ইতিহাস সর্বোচ্চ ৮০০ শব্দ রাখা হয়েছে।")}updateWordCount()});
+body.addEventListener("paste",e=>{const max=historyLimit(),t=(e.clipboardData||window.clipboardData).getData("text");if(max&&countWords(body.value+" "+t)>max){e.preventDefault();setMessage("saveMessage","ইতিহাসে পেস্টসহ মোট শব্দ ৮০০-এর বেশি হতে পারবে না।")}});
 $("donationDate").value=localDateString();
 if(client)client.auth.onAuthStateChange((event)=>{
  if(event==="PASSWORD_RECOVERY"){
@@ -173,3 +173,5 @@ $("forgotPasswordBtn")?.addEventListener("click",async()=>{
  setMessage("loginMessage",error?"রিসেট ইমেইল পাঠানো যায়নি: "+error.message:"ইমেইলটি Supabase-এ থাকলে পাসওয়ার্ড রিসেটের নির্দেশনা পাঠানো হয়েছে। Inbox ও Spam দেখুন।");
 });
 if(client)checkSession();else setMessage("loginMessage","Supabase Project URL ও Publishable key যুক্ত না হওয়া পর্যন্ত লগইন চালু হবে না।");
+
+$("module").addEventListener("change",updateWordCount);
