@@ -28,7 +28,7 @@ test("apps use the existing admin_profiles, mosque_entries and donation_records 
 });
 
 test("admin limits only history to 800 words, separates reviewer actions, and supports gallery uploads", () => {
-  assert.ok(admin.includes('const historyLimit=()=>$("module")?.value==="itihas"?800:0;'));
+  assert.match(admin, /selectedOptions\?\.\[0\].*label\.includes\("ইতিহাস"\)/);
   assert.match(admin, /historyLimit\(\)&&countWords\(body\.value\)>historyLimit\(\)/);
   assert.match(admin, /canReview/);
   assert.match(admin, /donationForm.*addEventListener/s);
