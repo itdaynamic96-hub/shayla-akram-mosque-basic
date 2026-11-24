@@ -6,7 +6,7 @@ const roleNames={owner:"প্রধান প্রশাসক",admin:"অ্�
 let profile=null,user=null,entries=[],donations=[];
 const localDateString=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")};
 const countWords=s=>(s.trim().match(/\S+/g)||[]).length;
-const historyLimit=()=>$("module")?.value==="itihas"?800:0;
+const historyLimit=()=>{const select=$("module"),option=select?.selectedOptions?.[0],value=String(select?.value||"").toLowerCase(),label=String(option?.textContent||"");return value==="itihas"||value.includes("history")||label.includes("ইতিহাস")?800:0};
 const clampWords=(s,max)=>{let n=0;return(s.match(/\S+|\s+/g)||[]).filter(p=>{if(!/\S/.test(p))return true;if(n>=max)return false;n++;return true}).join("")};
 function updateWordCount(){const max=historyLimit(),count=countWords(body.value);$("wordCount").textContent=max?count+" / "+max+" শব্দ":"শব্দ: "+count+" (ইতিহাস ছাড়া সীমা নেই)";}
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
