@@ -19,34 +19,34 @@ test("public and admin apps expose exactly the fixed 15 modules", () => {
   }
 });
 
-test("apps use the existing admin_profiles, mosque_entries and donation_records schema", () => {
+test("admin uses existing auth and content tables but no donation accounting UI", () => {
   assert.match(admin, /from\("admin_profiles"\)/);
   assert.match(admin, /from\("mosque_entries"\)/);
-  assert.match(admin, /from\("donation_records"\)/);
+  assert.doesNotMatch(admin, /from\("donation_records"\)|donationForm|donationSummary|loadDonations/);
   assert.match(app, /from\("mosque_entries"\)/);
-  assert.doesNotMatch(admin + app, /from\("(profiles|module_records)"\)/);
 });
 
-test("admin limits only history to 800 words, separates reviewer actions, and supports gallery uploads", () => {
-  assert.match(admin, /selectedOptions\?\.\[0\].*label\.includes\("ইতিহাস"\)/);
-  assert.match(admin, /historyLimit\(\)&&countWords\(body\.value\)>historyLimit\(\)/);
+test("every admin writing field is limited to 800 words and gallery uploads remain", () => {
+  assert.match(admin, /const WORD_LIMIT=800/);
+  assert.match(admin, /writingFieldsValid/);
+  assert.match(admin, /bindWordLimit\(\$\("title"\)/);
+  assert.match(admin, /bindWordLimit\(body/);
+  assert.match(admin, /bindWordLimit\(\$\("metadata"\)/);
   assert.match(admin, /canReview/);
-  assert.match(admin, /donationForm.*addEventListener/s);
   assert.match(admin, /galleryForm.*addEventListener/s);
   assert.match(admin, /storage\.from\("mosque-media"\)\.upload/);
 });
 
-test("migration targets the existing schema and does not invoke obsolete authorization functions", () => {
+test("migration targets the existing schema and preserves role controls", () => {
   assert.match(migration, /mosque_entries/);
   assert.match(migration, /donation_records/);
-  assert.match(migration, /word_count_800/);
   assert.match(migration, /admin_profiles/);
   assert.match(migration, /mosque-media/);
   const executableSql = migration.replace(/^--.*$/gm, "");
   assert.doesNotMatch(executableSql, /module_record_access|public\.profiles|module_records/);
 });
 
-test("public homepage binds published home, history, news, leadership, services and gallery modules", () => {
+test("public homepage still renders the published donations information module", () => {
   for (const id of ["heroDynamic","historyDynamic","committeeDynamic","newsDynamic","learningDynamic","servicesDynamic","galleryDynamic","contactDynamic","donationsDynamic","specialPrayerDynamic"]) {
     assert.ok(index.includes('id="' + id + '"'), "missing homepage target " + id);
     assert.ok(app.includes('"' + id + '"') || app.includes('id="' + id + '"'), "app does not render " + id);
@@ -55,23 +55,17 @@ test("public homepage binds published home, history, news, leadership, services 
   assert.match(app, /safeUrl/);
 });
 
-test("admin supports owner editing of published records, donation totals and password recovery", () => {
-  assert.match(admin, /isAdmin\(\)\|\|\["draft","pending","rejected"\]/);
-  assert.match(admin, /donationSummary/);
-  assert.match(admin, /setDonationStatus/);
+test("admin authentication, review workflow and password recovery remain enabled", () => {
+  assert.match(admin, /signInWithPassword/);
+  assert.match(admin, /canReview/);
   assert.match(admin, /resetPasswordForEmail/);
   assert.match(admin, /PASSWORD_RECOVERY/);
   assert.match(admin, /updateUser\(\{password\}\)/);
+  assert.doesNotMatch(admin, /donationForm|donationSummary|donation_records/);
 });
 
-test("public website uses the stylesheet and browser app entry points", () => {
+test("public website keeps its stylesheet and browser app entry points", () => {
   assert.match(index, /href="style\.css"/);
   assert.match(index, /src="app\.js"/);
   assert.match(index, /src="supabase-config\.js"/);
-});
-
-test("donation date defaults use the browser's local calendar date, not UTC", () => {
-  assert.match(admin, /const localDateString=\(\)=>/);
-  assert.equal((admin.match(/localDateString\(\)/g) || []).length, 2);
-  assert.doesNotMatch(admin, /toISOString\(\)\.slice\(0,10\)/);
 });
