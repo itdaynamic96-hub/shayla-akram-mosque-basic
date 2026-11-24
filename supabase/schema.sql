@@ -48,6 +48,14 @@ language sql immutable as $$
  end <= 500
 $$;
 
+create or replace function public.word_count_800(v text) returns boolean
+language sql immutable as $
+ select case
+   when btrim(coalesce(v,''))='' then 0
+   else cardinality(regexp_split_to_array(btrim(v), '\s+'))
+ end <= 800
+$;
+
 create or replace function public.current_admin_role() returns text
 language sql stable security definer set search_path=public,pg_temp as $$
  select role from public.admin_profiles where user_id=auth.uid()
@@ -59,8 +67,8 @@ create or replace function public.enforce_entry_rules() returns trigger
 language plpgsql security invoker as $$
 declare actor_role text;
 begin
- if not public.word_count_500(new.body) then
-   raise exception 'বিবরণ সর্বোচ্চ ৫০০ শব্দ হতে পারবে।' using errcode='22023';
+ if new.module='itihas' and not public.word_count_800(new.body) then
+   raise exception 'মসজিদের ইতিহাস সর্বোচ্চ ৮০০ শব্দ হতে পারবে।' using errcode='22023';
  end if;
 
  actor_role:=public.current_admin_role();
